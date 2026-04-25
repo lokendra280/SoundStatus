@@ -31,8 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   # Backend
-  supabase_flutter: ^2.3.0
-
+  supabase_flutter: ^2.12.4
   # State
   flutter_riverpod: ^2.5.1
   riverpod_annotation: ^2.3.3
@@ -66,6 +65,7 @@ dependencies:
   flutter_svg: ^2.2.4
   google_fonts: ^8.0.2
   shared_preferences: ^2.5.5
+  share_plus: ^12.0.2
 
 dev_dependencies:
   flutter_test:
@@ -102,6 +102,8 @@ flutter:
   assets:
     - .env
     - assets/svg/
+    - assets/jpg/
+    - assets/png/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

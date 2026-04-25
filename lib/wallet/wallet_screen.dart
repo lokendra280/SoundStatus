@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:soundstatus/core/constant_assets.dart';
-import 'package:soundstatus/core/theme/theme.dart';
+import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/models/wallet_transaction_model.dart';
 import 'package:soundstatus/providers/profile_provider.dart';
 import 'package:soundstatus/providers/wallet_provider.dart';

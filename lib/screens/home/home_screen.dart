@@ -1,53 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soundstatus/core/constant_assets.dart';
 import 'package:soundstatus/providers/profile_provider.dart';
 import 'package:soundstatus/providers/streak_provider.dart';
-import 'package:soundstatus/screens/sounds/sound_library_screen.dart';
 import 'package:soundstatus/screens/sounds/sound_upload_screen.dart';
 import 'package:soundstatus/status/create_status_screen.dart';
-import 'package:soundstatus/wallet/wallet_screen.dart';
-import 'package:soundstatus/widgets/common_svg_widget.dart';
-
-// class HomeScreen extends ConsumerStatefulWidget {
-//   const HomeScreen({super.key});
-
-//   @override
-//   ConsumerState<HomeScreen> createState() => _HomeScreenState();
-// }
-
-// class _HomeScreenState extends ConsumerState<HomeScreen> {
-//   @override
-//   void initState() {
-//     super.initState();
-//     // Record daily activity for streak
-//     WidgetsBinding.instance.addPostFrameCallback((_) {
-//       ref.read(streakProvider.notifier).recordActivity();
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final profile = ref.watch(profileProvider).valueOrNull;
-
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text(
-//           'StatusHub Sound',
-//           style: TextStyle(fontWeight: FontWeight.w800),
-//         ),
-//         actions: [
-//           // Coin balance badge
-//           // if (profile != null)
-//           //   Padding(
-//           //     padding: const EdgeInsets.only(right: 16),
-//           //     child: CoinBadge(coins: profile.coinBalance),
-//           //   ),
-//         ],
-//       ),
-//     );
-//   }
-// }
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -58,7 +14,16 @@ class HomeScreen extends ConsumerWidget {
     final streak = ref.watch(streakProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text("Sound"), centerTitle: true),
+      appBar: AppBar(
+        title: Text("Sound"),
+        actions: [
+          // if (profile != null)
+          //   Padding(
+          //     padding: EdgeInsets.only(right: 16),
+          //     child: CoinBadgesScreen(),
+          //   ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(

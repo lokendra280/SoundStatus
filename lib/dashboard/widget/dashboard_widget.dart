@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soundstatus/core/constant_assets.dart';
-import 'package:soundstatus/core/theme/theme.dart';
+import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/screens/home/home_screen.dart';
 import 'package:soundstatus/screens/sounds/sound_library_screen.dart';
 import 'package:soundstatus/screens/sounds/sound_upload_screen.dart';
