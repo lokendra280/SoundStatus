@@ -10,9 +10,9 @@ class AppConstants {
 
   // Ad unit IDs (replace with real ones)
   static const String rewardedAdUnitAndroid =
-      'ca-app-pub-3940256099942544/5224354917';
+      'ca-app-pub-9380499381640640/1219542502';
   static const String rewardedAdUnitIOS =
-      'ca-app-pub-3940256099942544/1712485313';
+      'ca-app-pub-9380499381640640/1219542502';
 
   // Storage
   static const String soundsBucket = 'sounds';

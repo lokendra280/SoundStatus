@@ -5,20 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 // ── Brand palette ─────────────────────────────────────────────────────────────
 // indigo
 const kAccent = Color(0xFFF43F5E); // rose
-const kGreen = Color(0xFF10B981); // emerald
-const kAmber = Color(0xFFF59E0B); // amber
-const kBlue = Color(0xFF3B82F6); // blue
-
-final kCatColors = [
-  const Color(0xFF6366F1),
-  const Color(0xFFF43F5E),
-  const Color(0xFF10B981),
-  const Color(0xFFF59E0B),
-  const Color(0xFF3B82F6),
-  const Color(0xFFEC4899),
-  const Color(0xFF8B5CF6),
-  const Color(0xFF14B8A6),
-];
 
 // ── AppColors ─────────────────────────────────────────────────────────────────
 class AppColors {
@@ -63,11 +49,17 @@ class AppColors {
     textSub: Color(0xFF606080),
   );
 
-  static const primaryColor = Color(0xFF10B981);
+  static const primaryColor = Color(0xFF534AB7);
   static const Color darkGrey = Color(0xff4D4D4D);
   static const Color white = Color(0xFFFFFFFF);
   static const secondaryColor = Color(0xFF38BDF8);
   static const yellow = Color(0xFFF59E0B);
+  static const darks = Color(0xFF1A1A1A);
+  static const Color lightGray = Color(0xFFF2f2F2);
+  static const double symmetricHozPadding = 12.0;
+  static const black = Colors.black;
+
+  static const purpleLight = Color(0xFFEEEDFE);
 }
 
 extension AppColorsX on BuildContext {

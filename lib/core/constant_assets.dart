@@ -16,6 +16,8 @@ class Assets {
   static const String bank = "$_basePathSvg/bank$_svg";
   static const String file = "$_basePathSvg/file$_svg";
   static const String hey = "$_basePathSvg/hey$_svg";
+  static const String play = "$_basePathSvg/play$_svg";
+  static const String mic = "$_basePathSvg/mic$_svg";
 
   static const String submit = "$_basePathSvg/submit$_svg";
   static const String share = "$_basePathSvg/share$_svg";

@@ -9,8 +9,8 @@ class CommonSvgWidget extends StatelessWidget {
   const CommonSvgWidget({
     super.key,
     required this.svgName,
-    this.height = 16,
-    this.width = 16,
+    this.height = 10,
+    this.width = 10,
     this.color,
   });
 

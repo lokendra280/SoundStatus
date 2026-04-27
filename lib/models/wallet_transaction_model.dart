@@ -1,6 +1,14 @@
 enum TxType { earn, spend }
 
-enum TxSource { adReward, uploadReward, systemBonus, streakBonus, spendUnlock }
+enum TxSource {
+  adReward,
+  uploadReward,
+  systemBonus,
+  streakBonus,
+  spendUnlock,
+  shareSound, // new — deduct 3 coins on share
+  shareRefund, // new — refund when share fails
+}
 
 class WalletTransaction {
   final String id;
@@ -26,7 +34,8 @@ class WalletTransaction {
         id: j['id'],
         userId: j['user_id'],
         type: j['type'] == 'earn' ? TxType.earn : TxType.spend,
-        amount: j['amount'],
+
+        amount: (j['amount'] as num).toInt().abs(), // always positive
         source: _sourceFromString(j['source']),
         note: j['note'],
         createdAt: DateTime.parse(j['created_at']),
@@ -37,7 +46,20 @@ class WalletTransaction {
     'upload_reward' => TxSource.uploadReward,
     'streak_bonus' => TxSource.streakBonus,
     'spend_unlock' => TxSource.spendUnlock,
+    'share_sound' => TxSource.shareSound,
+    'share_refund' => TxSource.shareRefund,
     _ => TxSource.systemBonus,
+  };
+
+  // Source string for passing to Supabase RPC
+  static String sourceToString(TxSource source) => switch (source) {
+    TxSource.adReward => 'ad_reward',
+    TxSource.uploadReward => 'upload_reward',
+    TxSource.systemBonus => 'system_bonus',
+    TxSource.streakBonus => 'streak_bonus',
+    TxSource.spendUnlock => 'spend_unlock',
+    TxSource.shareSound => 'share_sound',
+    TxSource.shareRefund => 'share_refund',
   };
 
   String get sourceLabel => switch (source) {
@@ -46,6 +68,8 @@ class WalletTransaction {
     TxSource.systemBonus => 'System Bonus',
     TxSource.streakBonus => 'Streak Bonus',
     TxSource.spendUnlock => 'Spent on Unlock',
+    TxSource.shareSound => 'Sound Shared',
+    TxSource.shareRefund => 'Share Refund',
   };
 
   String get icon => switch (source) {
@@ -54,5 +78,7 @@ class WalletTransaction {
     TxSource.systemBonus => '🎁',
     TxSource.streakBonus => '🔥',
     TxSource.spendUnlock => '🔓',
+    TxSource.shareSound => '📤',
+    TxSource.shareRefund => '↩️',
   };
 }

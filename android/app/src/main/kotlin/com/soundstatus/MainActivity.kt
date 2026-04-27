@@ -1,4 +1,4 @@
-package com.status_hub
+package com.soundstatus
 
 import io.flutter.embedding.android.FlutterActivity
 

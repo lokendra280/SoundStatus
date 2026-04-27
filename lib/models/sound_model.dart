@@ -14,6 +14,7 @@ class SoundModel {
   final int useCount;
   final bool isTrending;
   final DateTime createdAt;
+  final String? userName;
 
   const SoundModel({
     required this.id,
@@ -27,6 +28,8 @@ class SoundModel {
     this.rejectReason,
     this.playCount = 0,
     this.useCount = 0,
+    this.userName,
+
     this.isTrending = false,
     required this.createdAt,
   });
@@ -43,6 +46,7 @@ class SoundModel {
     rejectReason: j['reject_reason'],
     playCount: j['play_count'] ?? 0,
     useCount: j['use_count'] ?? 0,
+    userName: j['profiles']?['name'],
     isTrending: j['is_trending'] ?? false,
     createdAt: DateTime.parse(j['created_at']),
   );
