@@ -13,14 +13,9 @@ import 'package:soundstatus/widgets/empty_state.dart';
 const _purpleMid = Color(0xFFAFA9EC);
 // const _dark = Color(0xFF1A1A1A);
 const _teal = Color(0xFF0F6E56);
-const _tealLight = Color(0xFFE1F5EE);
-const _red = Color(0xFFA32D2D);
 
 const _categories = ['all', 'funny', 'meme', 'music', 'general', 'viral'];
 
-// ══════════════════════════════════════════════════════
-//  SCREEN
-// ══════════════════════════════════════════════════════
 class SoundLibraryScreen extends ConsumerStatefulWidget {
   const SoundLibraryScreen({super.key});
 
@@ -163,7 +158,7 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
                   children: [
                     const Icon(
                       Icons.error_outline_rounded,
-                      color: _red,
+                      color: AppColors.red,
                       size: 36,
                     ),
                     const SizedBox(height: 10),
@@ -272,7 +267,7 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(msg),
-          backgroundColor: error ? _red : _teal,
+          backgroundColor: error ? AppColors.red : _teal,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
         ),

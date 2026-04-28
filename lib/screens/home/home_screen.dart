@@ -8,8 +8,6 @@ import 'package:soundstatus/screens/sounds/sound_upload_screen.dart';
 import 'package:soundstatus/status/create_status_screen.dart';
 import 'package:soundstatus/widgets/common_svg_widget.dart';
 
-const _purple = Color(0xFF534AB7);
-const _purpleLight = Color(0xFFEEEDFE);
 const _amber = Color(0xFFBA7517);
 const _amberLight = Color(0xFFFAEEDA);
 const _teal = Color(0xFF0F6E56);
@@ -25,7 +23,6 @@ class HomeScreen extends ConsumerWidget {
     final remaining = 5 - (profile?.shareCountToday ?? 0);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -50,7 +47,7 @@ class HomeScreen extends ConsumerWidget {
         actions: [
           _CoinBadge(coins: profile?.coinBalance ?? 0),
           const SizedBox(width: 8),
-          _NotifBell(),
+          // _NotifBell(),
           const SizedBox(width: 14),
         ],
         bottom: PreferredSize(
@@ -64,13 +61,22 @@ class HomeScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Greeting
-            Text(
-              'Hey ${profile?.name ?? ''} 👋',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A1A),
-              ),
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    'Hey ${profile?.name ?? ''}',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                CommonSvgWidget(svgName: Assets.hey, height: 22),
+              ],
             ),
             const SizedBox(height: 3),
             Text(
@@ -83,7 +89,7 @@ class HomeScreen extends ConsumerWidget {
             Row(
               children: [
                 _StatCard(
-                  icon: Icons.local_fire_department_rounded,
+                  icon: Assets.strike,
                   iconColor: _amber,
                   bg: const Color(0xFFFFF7ED),
                   value: '$streak',
@@ -93,17 +99,17 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 _StatCard(
-                  icon: Icons.music_note_rounded,
-                  iconColor: _purple,
+                  icon: Assets.uploadMusic,
+                  iconColor: AppColors.primaryColor,
                   bg: const Color(0xFFEEF2FF),
                   value: '${profile?.uploadCount ?? 0}',
                   label: 'Uploads',
                   valueColor: const Color(0xFF3C3489),
-                  labelColor: _purple,
+                  labelColor: AppColors.primaryColor,
                 ),
                 const SizedBox(width: 8),
                 _StatCard(
-                  icon: Icons.upload_rounded,
+                  icon: Assets.share,
                   iconColor: _teal,
                   bg: const Color(0xFFF0FDF4),
                   value: '${profile?.shareCountToday ?? 0}/5',
@@ -111,6 +117,7 @@ class HomeScreen extends ConsumerWidget {
                   valueColor: const Color(0xFF27500A),
                   labelColor: const Color(0xFF3B6D11),
                 ),
+                const SizedBox(width: 8),
               ],
             ),
             const SizedBox(height: 20),
@@ -121,10 +128,10 @@ class HomeScreen extends ConsumerWidget {
             Row(
               children: [
                 _QuickAction(
-                  icon: Icons.add_rounded,
+                  icon: Assets.add,
                   label: 'Create Status',
-                  iconBg: _purple,
-                  cardBg: _purpleLight,
+                  iconBg: AppColors.primaryColor,
+                  cardBg: AppColors.purpleLight,
                   cardBorder: const Color(0xFFAFA9EC),
                   labelColor: const Color(0xFF3C3489),
                   onTap: () => Navigator.push(
@@ -136,7 +143,7 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 10),
                 _QuickAction(
-                  icon: Icons.upload_file_rounded,
+                  icon: Assets.upload,
                   label: 'Upload Sound',
                   iconBg: _teal,
                   cardBg: _tealLight,
@@ -227,7 +234,7 @@ class _NotifBell extends StatelessWidget {
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: _purpleLight,
+          color: AppColors.purpleLight,
           borderRadius: BorderRadius.circular(10),
         ),
         child: CommonSvgWidget(
@@ -236,11 +243,6 @@ class _NotifBell extends StatelessWidget {
           height: 10,
           width: 10,
         ),
-        // child: const Icon(
-        //   Icons.notifications_outlined,
-        //   color: _purple,
-        //   size: 18,
-        // ),
       ),
       Positioned(
         right: 6,
@@ -261,7 +263,7 @@ class _NotifBell extends StatelessWidget {
 
 // ── Stat Card ─────────────────────────────────────────
 class _StatCard extends StatelessWidget {
-  final IconData icon;
+  final String icon;
   final Color iconColor, bg, valueColor, labelColor;
   final String value, label;
 
@@ -286,7 +288,13 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: iconColor, size: 20),
+          // Icon(icon, color: iconColor, size: 20),
+          CommonSvgWidget(
+            svgName: icon,
+            color: iconColor,
+            height: 20,
+            width: 20,
+          ),
           const SizedBox(height: 6),
           Text(
             value,
@@ -305,7 +313,7 @@ class _StatCard extends StatelessWidget {
 
 // ── Quick Action ──────────────────────────────────────
 class _QuickAction extends StatelessWidget {
-  final IconData icon;
+  final String icon;
   final String label;
   final Color iconBg, cardBg, cardBorder, labelColor;
   final VoidCallback onTap;
@@ -337,7 +345,13 @@ class _QuickAction extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
-              child: Icon(icon, color: Colors.white, size: 20),
+              child: CommonSvgWidget(
+                svgName: icon,
+                color: AppColors.white,
+                // height: 18,
+                // width: 20,
+              ),
+              // child: Icon(icon, color: Colors.white, size: 20),
             ),
             const SizedBox(height: 8),
             Text(
@@ -388,7 +402,7 @@ class _XPCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: _purple,
+                        color: AppColors.primaryColor,
                       ),
                     ),
                     TextSpan(
@@ -409,8 +423,8 @@ class _XPCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: _purpleLight,
-              color: _purple,
+              backgroundColor: AppColors.purpleLight,
+              color: AppColors.primaryColor,
               minHeight: 6,
             ),
           ),
@@ -521,10 +535,14 @@ class _WeeklyChallengeCard extends StatelessWidget {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: _purpleLight,
+                  color: AppColors.purpleLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.star_rounded, color: _purple, size: 18),
+                child: const Icon(
+                  Icons.star_rounded,
+                  color: AppColors.primaryColor,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -551,7 +569,7 @@ class _WeeklyChallengeCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: _purple,
+                  color: AppColors.primaryColor,
                 ),
               ),
             ],
@@ -561,8 +579,8 @@ class _WeeklyChallengeCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: pct,
-              backgroundColor: _purpleLight,
-              color: _purple,
+              backgroundColor: AppColors.purpleLight,
+              color: AppColors.primaryColor,
               minHeight: 6,
             ),
           ),

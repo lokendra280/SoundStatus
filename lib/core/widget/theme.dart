@@ -60,6 +60,7 @@ class AppColors {
   static const black = Colors.black;
 
   static const purpleLight = Color(0xFFEEEDFE);
+  static const red = Color(0xFFA32D2D);
 }
 
 extension AppColorsX on BuildContext {
