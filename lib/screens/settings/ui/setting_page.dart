@@ -6,6 +6,7 @@ import 'package:soundstatus/providers/auth_provider.dart';
 import 'package:soundstatus/providers/profile_provider.dart';
 import 'package:soundstatus/providers/setting_provider.dart';
 import 'package:soundstatus/providers/theme_provider.dart';
+import 'package:soundstatus/screens/auth/login_screen.dart';
 import 'package:soundstatus/screens/leaderboard/ui/leaderboard_screen.dart';
 import 'package:soundstatus/screens/settings/ui/help_faq_page.dart';
 import 'package:soundstatus/screens/settings/ui/profile_screen.dart';
@@ -443,13 +444,22 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
           ),
           TextButton(
             onPressed: () async {
-              final result = await ref
-                  .read(settingsProvider.notifier)
-                  .signOut();
-              if (!context.mounted) return;
-              if (result == SignOutResult.error) {
-                _snack('Sign out failed', error: true);
+              ref.watch(authProvider.notifier).signOut();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
               }
+
+              // final result = await ref
+              //     .read(settingsProvider.notifier)
+              //     .signOut();
+              // if (!context.mounted) return;
+              // if (result == SignOutResult.error) {
+              //   _snack('Sign out failed', error: true);
+              // }
             },
             child: const Text(
               'Sign out',
