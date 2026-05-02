@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 SupabaseClient get _sb => Supabase.instance.client;
@@ -37,6 +39,9 @@ class AuthNotifier extends Notifier<AuthState> {
     return AuthState(user: _sb.auth.currentUser);
   }
 
+  static const _webClientId =
+      '993530550886-ut3pki685q7ieb5tn3tcst26d799delq.apps.googleusercontent.com';
+  //
   // ── Sign up ───────────────────────────────────────────
   // Always stays logged-out after signup so OTP screen
   // handles verification before granting access.
@@ -97,6 +102,67 @@ class AuthNotifier extends Notifier<AuthState> {
         return 'rate_limit:$seconds'; // pass seconds to UI
       }
       return e.toString();
+    }
+  }
+
+  Future<AuthResponse?> signInWithGoogle() async {
+    try {
+      debugPrint('🔵 Google Sign-In: starting authenticate()');
+
+      // Initialize with serverClientId before authenticate()
+      await GoogleSignIn.instance.initialize(serverClientId: _webClientId);
+
+      // Use authenticate() for version 7.x
+      final GoogleSignInAccount googleUser = await GoogleSignIn.instance
+          .authenticate();
+
+      debugPrint('🔵 Google account: ${googleUser.email}');
+
+      // Get authentication - returns GoogleSignInAuthentication directly
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      debugPrint('🔵 idToken: ${idToken != null ? "found ✅" : "NULL ❌"}');
+
+      if (idToken == null) {
+        throw Exception(
+          'No ID Token. Ensure Web Client ID is configured correctly.',
+        );
+      }
+
+      // For accessToken in v7.x, we need to get it from authorizationClient
+      String? accessToken;
+      try {
+        final authorization = await googleUser.authorizationClient
+            .authorizationForScopes(['email']);
+        accessToken = authorization?.accessToken;
+        debugPrint(
+          '🔵 accessToken: ${accessToken != null ? "found ✅" : "NULL"}',
+        );
+      } catch (e) {
+        debugPrint('🟡 Could not get access token: $e');
+      }
+
+      // Sign in to Supabase with Google tokens
+      debugPrint('🔵 Signing in to Supabase...');
+      final response = await _sb.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+
+      debugPrint('✅ Supabase sign-in success: ${response.user?.email}');
+      return response;
+    } on GoogleSignInException catch (e) {
+      debugPrint(' GoogleSignInException: ${e.code} - ${e.toString()}');
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        debugPrint(' User cancelled — returning null');
+        return null;
+      }
+      rethrow;
+    } catch (e) {
+      debugPrint('Unexpected error in GoogleAuthService.signIn(): $e');
+      rethrow;
     }
   }
 

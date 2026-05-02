@@ -5,6 +5,8 @@
 <!-- Optional: Add this permission if you want to save your recordings in public folders -->
 <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
 <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+
     <application
         android:label="SoundStatus"
         android:name="${applicationName}"

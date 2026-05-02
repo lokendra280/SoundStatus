@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soundstatus/core/constant_assets.dart';
 import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/dashboard/pages/dashboard_page.dart';
+import 'package:soundstatus/dashboard/widget/dashboard_widget.dart';
 import 'package:soundstatus/providers/auth_provider.dart';
 import 'package:soundstatus/screens/auth/otp_screen.dart';
 import 'package:soundstatus/widgets/button.dart';
@@ -104,6 +105,22 @@ class _State extends ConsumerState<LoginScreen> {
     return null;
   }
 
+  Future<void> _google() async {
+    setState(() => _error = null);
+    final err = await ref.read(authProvider.notifier).signInWithGoogle();
+
+    // 'Cancelled' means user dismissed the picker — not an error to show
+    if (err != null && err != 'Cancelled') {
+      setState(() => _error = 'Google sign-in failed. Please try again.');
+      return;
+    }
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const DashboardPage()),
+    );
+  }
+
   bool get _isEmailNotConfirmed =>
       _error?.contains('verify your email') == true ||
       _error?.contains('not confirmed') == true;
@@ -111,13 +128,12 @@ class _State extends ConsumerState<LoginScreen> {
   // ── Submit ────────────────────────────────────────────
   // add to state
   Future<void> _submit() async {
-    if (_inCooldown) return; // block submit during cooldown
-
     final validErr = _validate();
     if (validErr != null) {
       setState(() => _error = validErr);
       return;
     }
+
     setState(() => _error = null);
 
     final email = _emailCtrl.text.trim().toLowerCase();
@@ -125,35 +141,40 @@ class _State extends ConsumerState<LoginScreen> {
     final notifier = ref.read(authProvider.notifier);
 
     if (_isSignUp) {
+      // ── SIGN UP ─────────────────────────────────────────────────────────
+      // Step 1: create the account
       final err = await notifier.signUp(email, password);
       if (err != null) {
         setState(() => _error = _friendlyError(err));
         return;
       }
 
-      final otpErr = await notifier.sendOtp(email);
-      if (otpErr != null) {
-        // Handle rate limit
-        if (otpErr.startsWith('rate_limit:')) {
-          final seconds = int.tryParse(otpErr.split(':').last) ?? 60;
-          _startCooldown(seconds);
-          return;
-        }
-        setState(() => _error = _friendlyError(otpErr));
-        return;
-      }
+      //  await notifier.signOut();
+      await notifier.sendOtp(email);
 
       if (!mounted) return;
+
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => OtpScreen(email: email)),
       );
     } else {
+      // ── SIGN IN ─────────────────────────────────────────────────────────
       final err = await notifier.signIn(email, password);
       if (err != null) {
         setState(() => _error = _friendlyError(err));
+        return;
       }
-      // Navigation handled by listenManual in initState
+      // if (!mounted) return;
+
+      // // Pull cloud data into local Hive after login
+      // await ref.read(syncProvider.notifier).sync();
+      // if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DashboardPage()),
+      );
     }
   }
 
@@ -400,6 +421,53 @@ class _State extends ConsumerState<LoginScreen> {
                             ),
                           )
                         : null,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: c.border)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          'or',
+                          style: TextStyle(fontSize: 12, color: c.textMuted),
+                        ),
+                      ),
+                      Expanded(child: Divider(color: c.border)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ── Google Sign-In ───────────────────────────────────────────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      onPressed: loading ? null : _google,
+                      icon: loading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text(
+                              'G',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF4285F4),
+                              ),
+                            ),
+                      label: Text("Continue With Google"),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: AppColors.primaryColor.withOpacity(0.3),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 20),
                 ],

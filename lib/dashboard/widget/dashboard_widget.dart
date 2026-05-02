@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:soundstatus/core/constant_assets.dart';
 import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/screens/home/home_screen.dart';
+import 'package:soundstatus/screens/settings/ui/setting_page.dart';
 import 'package:soundstatus/screens/sounds/sound_library_screen.dart';
 import 'package:soundstatus/screens/sounds/sound_upload_screen.dart';
 import 'package:soundstatus/wallet/wallet_screen.dart';
@@ -97,7 +98,7 @@ class _DashboardWidgetState extends State<DashboardWidget>
             ],
           ),
         ) ??
-        false; //if showDialouge had returned null, then return false
+        false;
   }
 
   @override
@@ -150,23 +151,24 @@ class _DashboardWidgetState extends State<DashboardWidget>
               ),
               label: "Sounds",
             ),
+
             NavigationDestination(
               icon: CommonSvgWidget(
-                svgName: Assets.upload,
+                svgName: Assets.wallet,
                 color: _selectedIndex == 2
                     ? AppColors.primaryColor
                     : AppColors.darkGrey,
               ),
-              label: "Upload",
+              label: "Wallet",
             ),
             NavigationDestination(
               icon: CommonSvgWidget(
-                svgName: Assets.wallet,
+                svgName: Assets.setting,
                 color: _selectedIndex == 3
                     ? AppColors.primaryColor
                     : AppColors.darkGrey,
               ),
-              label: "Wallet",
+              label: "Setting",
             ),
           ],
         ),
@@ -177,8 +179,8 @@ class _DashboardWidgetState extends State<DashboardWidget>
           children: [
             const HomeScreen(),
             const SoundLibraryScreen(),
-            const SoundUploadScreen(),
             const WalletScreen(),
+            SettingsScreen(),
           ],
         ),
       ),

@@ -66,47 +66,6 @@ class SoundLibraryNotifier extends AutoDisposeAsyncNotifier<List<SoundModel>> {
     final res = await query;
     return (res as List).map((e) => SoundModel.fromJson(e)).toList();
   }
-  // Future<List<SoundModel>> _fetchSounds() async {
-  //   var query = supabase
-  //       .from('sounds')
-  //       .select('''
-  //     id,
-  //     title,
-  //     duration_sec,
-  //     uploaded_by,
-  //     profiles!sounds_uploaded_by_fkey (
-  //       id,
-  //       name,
-  //       avatar_url
-  //     )
-  //   ''')
-  //       .eq('status', 'approved')
-  //       .order('created_at', ascending: false);
-
-  //   if (_filter == SoundFilter.trending) {
-  //     query = supabase
-  //         .from('sounds')
-  //         .select()
-  //         .eq('status', 'approved')
-  //         .eq('is_trending', true)
-  //         .order('use_count', ascending: false);
-  //   }
-
-  //   if (_filter == SoundFilter.myUploads && currentUserId != null) {
-  //     query = supabase
-  //         .from('sounds')
-  //         .select()
-  //         .eq('uploaded_by', currentUserId!)
-  //         .order('created_at', ascending: false);
-  //   }
-
-  //   if (_category != 'all') {
-  //     query = (query as dynamic).eq('category', _category);
-  //   }
-
-  //   final res = await query;
-  //   return (res as List).map((e) => SoundModel.fromJson(e)).toList();
-  // }
 
   void setFilter(SoundFilter f) {
     _filter = f;

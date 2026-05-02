@@ -61,6 +61,18 @@ class AppColors {
 
   static const purpleLight = Color(0xFFEEEDFE);
   static const red = Color(0xFFA32D2D);
+
+  static const redLight = Color(0xFFFCEBEB);
+
+  static const tealLight = Color(0xFFE1F5EE);
+  static const blue = Color(0xFF185FA5);
+  static const blueLight = Color(0xFFE6F1FB);
+
+  static const teal = Color(0xFF0F6E56);
+  static const amber = Color(0xFFBA7517);
+  static const purpleMid = Color(0xFFAFA9EC);
+
+  static const amberLight = Color(0xFFFAEEDA);
 }
 
 extension AppColorsX on BuildContext {

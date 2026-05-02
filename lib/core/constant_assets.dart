@@ -18,11 +18,16 @@ class Assets {
   static const String hey = "$_basePathSvg/hey$_svg";
   static const String play = "$_basePathSvg/play$_svg";
   static const String mic = "$_basePathSvg/mic$_svg";
+  static const String setting = "$_basePathSvg/setting$_svg";
+  static const String about = "$_basePathSvg/aboutme$_svg";
+  static const String help = "$_basePathSvg/help$_svg";
+  static const String rating = "$_basePathSvg/rating$_svg";
 
   static const String submit = "$_basePathSvg/submit$_svg";
   static const String share = "$_basePathSvg/share$_svg";
   static const String tv = "$_basePathSvg/tv$_svg";
   static const String uploadMusic = "$_basePathSvg/upload-music$_svg";
+  static const String leaderboard = "$_basePathSvg/leaderboard$_svg";
 
   static const String upload = "$_basePathSvg/upload$_svg";
   static const String wallet = "$_basePathSvg/wallet$_svg";

@@ -7,24 +7,9 @@ import 'package:soundstatus/models/wallet_transaction_model.dart';
 import 'package:soundstatus/providers/profile_provider.dart';
 import 'package:soundstatus/wallet/states/wallet_presenter.dart';
 import 'package:soundstatus/wallet/states/wallet_state.dart';
+import 'package:soundstatus/widgets/balance_card.dart';
 import 'package:soundstatus/widgets/common_svg_widget.dart';
 
-const _purple = Color(0xFF534AB7);
-const _purpleLight = Color(0xFFEEEDFE);
-const _purpleMid = Color(0xFFAFA9EC);
-const _dark = Color(0xFF1A1A1A);
-const _amber = Color(0xFFBA7517);
-const _amberLight = Color(0xFFFAEEDA);
-const _teal = Color(0xFF0F6E56);
-const _tealLight = Color(0xFFE1F5EE);
-const _blue = Color(0xFF185FA5);
-const _blueLight = Color(0xFFE6F1FB);
-const _red = Color(0xFFA32D2D);
-const _redLight = Color(0xFFFCEBEB);
-
-// ══════════════════════════════════════════════════════
-//  SCREEN — only reads state, calls presenter
-// ══════════════════════════════════════════════════════
 class WalletScreen extends ConsumerWidget {
   const WalletScreen({super.key});
 
@@ -39,7 +24,7 @@ class WalletScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(err),
-            backgroundColor: _red,
+            backgroundColor: AppColors.red,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -48,17 +33,16 @@ class WalletScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
       appBar: _WalletAppBar(state: state),
       body: RefreshIndicator(
-        color: _purple,
+        color: AppColors.primaryColor,
         onRefresh: () => ref.read(walletPresenterProvider.notifier).refresh(),
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: _BalanceCard(
+                child: BalanceCard(
                   coins: profile?.coinBalance ?? 0,
                   onEarn: () => _onWatchAd(context, ref),
                   onSpend: () => _showSpendSheet(context, ref, state),
@@ -95,11 +79,11 @@ class WalletScreen extends ConsumerWidget {
                       title: 'Upload a sound',
                       subtitle: 'When admin approves it',
                       reward: '+20',
-                      bg: _purpleLight,
+                      bg: AppColors.purpleLight,
                       iconBg: Color(0xFFCECBF6),
                       iconColor: Color(0xFF26215C),
                       titleColor: Color(0xFF3C3489),
-                      subtitleColor: _purple,
+                      subtitleColor: AppColors.primaryColor,
                     ),
                     const SizedBox(height: 8),
                     const _EarnCard(
@@ -107,7 +91,7 @@ class WalletScreen extends ConsumerWidget {
                       title: '7-day streak bonus',
                       subtitle: 'Stay active every day',
                       reward: '+5/wk',
-                      bg: _amberLight,
+                      bg: AppColors.amberLight,
                       iconBg: Color(0xFFFAC775),
                       iconColor: Color(0xFF412402),
                       titleColor: Color(0xFF633806),
@@ -192,7 +176,7 @@ class WalletScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(msg),
-          backgroundColor: error ? _red : _teal,
+          backgroundColor: error ? AppColors.red : AppColors.teal,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 3),
         ),
@@ -211,12 +195,15 @@ class _WalletAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) => AppBar(
-    backgroundColor: Colors.white,
     elevation: 0,
     titleSpacing: 16,
     title: const Text(
       'My Wallet',
-      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: _dark),
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: AppColors.white,
+      ),
     ),
     actions: [
       Padding(
@@ -225,7 +212,7 @@ class _WalletAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: state.adReady ? _tealLight : _amberLight,
+              color: state.adReady ? AppColors.tealLight : AppColors.amberLight,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -235,7 +222,9 @@ class _WalletAppBar extends StatelessWidget implements PreferredSizeWidget {
                   width: 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: state.adReady ? _teal : _amber,
+                    color: state.adReady
+                        ? AppColors.teal
+                        : AppColors.amberLight,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -245,7 +234,7 @@ class _WalletAppBar extends StatelessWidget implements PreferredSizeWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: state.adReady ? _teal : _amber,
+                    color: state.adReady ? AppColors.teal : AppColors.amber,
                   ),
                 ),
               ],
@@ -264,119 +253,6 @@ class _WalletAppBar extends StatelessWidget implements PreferredSizeWidget {
 // ══════════════════════════════════════════════════════
 //  BALANCE CARD
 // ══════════════════════════════════════════════════════
-class _BalanceCard extends StatelessWidget {
-  final int coins;
-  final VoidCallback onEarn, onSpend;
-  const _BalanceCard({
-    required this.coins,
-    required this.onEarn,
-    required this.onSpend,
-  });
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: _purple,
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Total balance',
-          style: TextStyle(fontSize: 12, color: Color(0xAAFFFFFF)),
-        ),
-        const SizedBox(height: 6),
-        Row(
-          // crossAxisAlignment: CrossAxisAlignment.baseline,
-          // textBaseline: TextBaseline.alphabetic,
-          crossAxisAlignment: CrossAxisAlignment.center,
-
-          children: [
-            CommonSvgWidget(
-              svgName: Assets.bank,
-              height: 30,
-              width: 30,
-              color: AppColors.yellow,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '$coins',
-              style: const TextStyle(
-                fontSize: 38,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 6),
-            const Text(
-              'coins',
-              style: TextStyle(fontSize: 14, color: Color(0xAAFFFFFF)),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 3),
-        Text(
-          '≈ \$${(coins / 1000).toStringAsFixed(2)} equivalent',
-          style: const TextStyle(fontSize: 11, color: Color(0x80FFFFFF)),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: onSpend,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'Spend coins',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: GestureDetector(
-                onTap: onEarn,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '+ Earn more',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _purple,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
 
 // ══════════════════════════════════════════════════════
 //  STATS ROW
@@ -391,16 +267,20 @@ class _StatsRow extends StatelessWidget {
       _MiniStat(
         label: 'Ads today',
         value: '${state.adsWatchedToday}x',
-        color: _blue,
+        color: AppColors.blue,
       ),
       const SizedBox(width: 8),
       _MiniStat(
         label: 'This week',
         value: '+${state.coinsEarnedThisWeek}',
-        color: _teal,
+        color: AppColors.teal,
       ),
       const SizedBox(width: 8),
-      _MiniStat(label: 'Streak', value: '${state.streakDays}d', color: _amber),
+      _MiniStat(
+        label: 'Streak',
+        value: '${state.streakDays}d',
+        color: AppColors.amber,
+      ),
     ],
   );
 }
@@ -419,7 +299,7 @@ class _MiniStat extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFEFEFEF)),
       ),
@@ -434,7 +314,10 @@ class _MiniStat extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+          Text(
+            label,
+            style: TextStyle(fontSize: 10, color: AppColors.darkGrey),
+          ),
         ],
       ),
     ),
@@ -453,7 +336,7 @@ class _AdEarnCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: _blueLight,
+      color: AppColors.blueLight,
       borderRadius: BorderRadius.circular(14),
       border: Border.all(color: const Color(0xFF85B7EB)),
     ),
@@ -468,11 +351,7 @@ class _AdEarnCard extends StatelessWidget {
                 color: const Color(0xFFB5D4F4),
                 borderRadius: BorderRadius.circular(10),
               ),
-              // child: const Icon(
-              //   Icons.play_circle_outline_rounded,
-              //   color: Color(0xFF0C447C),
-              //   size: 18,
-              // ),
+
               child: CommonSvgWidget(
                 svgName: Assets.play,
                 height: 10,
@@ -496,7 +375,7 @@ class _AdEarnCard extends StatelessWidget {
                     state.adLimitReached
                         ? 'Daily limit reached'
                         : '${state.adsRemaining} of 10 left today',
-                    style: const TextStyle(fontSize: 11, color: _blue),
+                    style: const TextStyle(fontSize: 11, color: AppColors.blue),
                   ),
                 ],
               ),
@@ -505,7 +384,7 @@ class _AdEarnCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: state.adLimitReached
-                    ? _redLight
+                    ? AppColors.redLight
                     : const Color(0xFFB5D4F4),
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -514,7 +393,9 @@ class _AdEarnCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: state.adLimitReached ? _red : const Color(0xFF0C447C),
+                  color: state.adLimitReached
+                      ? AppColors.red
+                      : const Color(0xFF0C447C),
                 ),
               ),
             ),
@@ -526,7 +407,7 @@ class _AdEarnCard extends StatelessWidget {
           child: LinearProgressIndicator(
             value: state.adsWatchedToday / 10,
             backgroundColor: const Color(0xFFB5D4F4).withOpacity(0.4),
-            color: state.adLimitReached ? _red : _blue,
+            color: state.adLimitReached ? AppColors.red : AppColors.blue,
             minHeight: 4,
           ),
         ),
@@ -541,8 +422,8 @@ class _AdEarnCard extends StatelessWidget {
               color: state.adLimitReached
                   ? Colors.grey[200]
                   : state.adReady
-                  ? _purple
-                  : _purpleMid,
+                  ? AppColors.primaryColor
+                  : AppColors.purpleMid,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Center(
@@ -552,7 +433,7 @@ class _AdEarnCard extends StatelessWidget {
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: AppColors.white,
                       ),
                     )
                   : Text(
@@ -565,8 +446,8 @@ class _AdEarnCard extends StatelessWidget {
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: state.adLimitReached
-                            ? Colors.grey[500]
-                            : Colors.white,
+                            ? AppColors.darkGrey
+                            : AppColors.white,
                       ),
                     ),
             ),
@@ -676,12 +557,12 @@ class _TransactionList extends StatelessWidget {
                   width: 60,
                   height: 60,
                   decoration: const BoxDecoration(
-                    color: _purpleLight,
+                    color: AppColors.purpleLight,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.receipt_long_rounded,
-                    color: _purple,
+                    color: AppColors.primaryColor,
                     size: 28,
                   ),
                 ),
@@ -691,7 +572,7 @@ class _TransactionList extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: _dark,
+                    color: AppColors.darks,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -735,14 +616,16 @@ class _TxCard extends StatelessWidget {
     _ => Icons.monetization_on_rounded,
   };
 
-  Color get _iconBg => tx.type == TxType.earn ? _tealLight : _redLight;
-  Color get _iconColor => tx.type == TxType.earn ? _teal : _red;
+  Color get _iconBg =>
+      tx.type == TxType.earn ? AppColors.tealLight : AppColors.redLight;
+  Color get _iconColor =>
+      tx.type == TxType.earn ? AppColors.teal : AppColors.red;
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: AppColors.white,
       borderRadius: BorderRadius.circular(14),
       border: Border.all(color: const Color(0xFFEFEFEF)),
     ),
@@ -764,7 +647,7 @@ class _TxCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: _dark,
+                  color: AppColors.darks,
                 ),
               ),
               if (tx.note != null && tx.note!.isNotEmpty)
@@ -813,7 +696,7 @@ class _RewardDialog extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: const BoxDecoration(
-              color: _amberLight,
+              color: Colors.amber,
               shape: BoxShape.circle,
             ),
             child: const Center(
@@ -826,7 +709,7 @@ class _RewardDialog extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: _dark,
+              color: AppColors.darks,
             ),
           ),
           const SizedBox(height: 6),
@@ -842,7 +725,7 @@ class _RewardDialog extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 13),
               decoration: BoxDecoration(
-                color: _purple,
+                color: AppColors.primaryColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Center(
@@ -912,13 +795,13 @@ class _SpendSheet extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: _dark,
+                color: AppColors.darks,
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: _amberLight,
+                color: AppColors.amberLight,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -930,7 +813,7 @@ class _SpendSheet extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: _amber,
+                      color: AppColors.amber,
                     ),
                   ),
                 ],
@@ -962,12 +845,16 @@ class _SpendSheet extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: canAfford ? _purpleLight : Colors.grey[100],
+                        color: canAfford
+                            ? AppColors.purpleLight
+                            : Colors.grey[100],
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         item.icon,
-                        color: canAfford ? _purple : Colors.grey[400],
+                        color: canAfford
+                            ? AppColors.primaryColor
+                            : Colors.grey[400],
                         size: 18,
                       ),
                     ),
@@ -978,7 +865,7 @@ class _SpendSheet extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: canAfford ? _dark : Colors.grey[400],
+                          color: canAfford ? AppColors.darks : Colors.grey[400],
                         ),
                       ),
                     ),
@@ -988,7 +875,9 @@ class _SpendSheet extends StatelessWidget {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: canAfford ? _purpleLight : Colors.grey[100],
+                        color: canAfford
+                            ? AppColors.purpleLight
+                            : Colors.grey[100],
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -996,7 +885,9 @@ class _SpendSheet extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: canAfford ? _purple : Colors.grey[400],
+                          color: canAfford
+                              ? AppColors.primaryColor
+                              : Colors.grey[400],
                         ),
                       ),
                     ),
@@ -1024,7 +915,7 @@ class _SectionTitle extends StatelessWidget {
     style: const TextStyle(
       fontSize: 15,
       fontWeight: FontWeight.w600,
-      color: _dark,
+      color: AppColors.darks,
     ),
   );
 }

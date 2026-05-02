@@ -8,11 +8,6 @@ import 'package:soundstatus/screens/sounds/sound_upload_screen.dart';
 import 'package:soundstatus/status/create_status_screen.dart';
 import 'package:soundstatus/widgets/common_svg_widget.dart';
 
-const _amber = Color(0xFFBA7517);
-const _amberLight = Color(0xFFFAEEDA);
-const _teal = Color(0xFF0F6E56);
-const _tealLight = Color(0xFFE1F5EE);
-
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -21,7 +16,6 @@ class HomeScreen extends ConsumerWidget {
     final profile = ref.watch(profileProvider).valueOrNull;
     final streak = ref.watch(streakProvider);
     final remaining = 5 - (profile?.shareCountToday ?? 0);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -90,7 +84,7 @@ class HomeScreen extends ConsumerWidget {
               children: [
                 _StatCard(
                   icon: Assets.strike,
-                  iconColor: _amber,
+                  iconColor: AppColors.amber,
                   bg: const Color(0xFFFFF7ED),
                   value: '$streak',
                   label: 'Day streak',
@@ -110,7 +104,7 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(width: 8),
                 _StatCard(
                   icon: Assets.share,
-                  iconColor: _teal,
+                  iconColor: AppColors.teal,
                   bg: const Color(0xFFF0FDF4),
                   value: '${profile?.shareCountToday ?? 0}/5',
                   label: 'Shares today',
@@ -145,8 +139,8 @@ class HomeScreen extends ConsumerWidget {
                 _QuickAction(
                   icon: Assets.upload,
                   label: 'Upload Sound',
-                  iconBg: _teal,
-                  cardBg: _tealLight,
+                  iconBg: AppColors.teal,
+                  cardBg: AppColors.tealLight,
                   cardBorder: const Color(0xFF5DCAA5),
                   labelColor: const Color(0xFF085041),
                   onTap: () => Navigator.push(
@@ -181,7 +175,7 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 10),
             _WeeklyChallengeCard(
               title: 'Upload 3 sounds this week',
-              progress: 2,
+              progress: streak,
               total: 3,
               xpReward: 150,
               deadline: 'Ends Sun',
@@ -202,7 +196,7 @@ class _CoinBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
     decoration: BoxDecoration(
-      color: _amberLight,
+      color: AppColors.amberLight,
       borderRadius: BorderRadius.circular(20),
     ),
     child: Row(
@@ -457,7 +451,7 @@ class _ShareLimitBanner extends StatelessWidget {
     ),
     child: Row(
       children: [
-        const Icon(Icons.warning_rounded, color: _amber, size: 20),
+        const Icon(Icons.warning_rounded, color: AppColors.amber, size: 20),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -486,7 +480,7 @@ class _ShareLimitBanner extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: _amber,
+              color: AppColors.amber,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Text(
