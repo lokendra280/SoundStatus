@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:soundstatus/core/supabase_client.dart';
 import 'package:soundstatus/providers/theme_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
@@ -18,7 +19,11 @@ void main() async {
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
-
+  try {
+    await ensureAuthenticated();
+  } catch (e) {
+    debugPrint('Error refreshing session: $e');
+  }
   // AdMob
   await MobileAds.instance.initialize();
 

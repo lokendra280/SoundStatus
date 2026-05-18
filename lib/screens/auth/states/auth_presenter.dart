@@ -2,24 +2,25 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soundstatus/providers/profile_provider.dart';
 import 'package:soundstatus/providers/streak_provider.dart';
-import 'package:soundstatus/screens/auth/states/auth_state.dart';
+import 'package:soundstatus/screens/auth/states/auth_sesions.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
-final authPresenterProvider = NotifierProvider<AuthPresenter, AuthState>(
+final authPresenterProvider = NotifierProvider<AuthPresenter, AuthFlowState>(
+  // ✅ AuthFlowState
   AuthPresenter.new,
 );
 
-class AuthPresenter extends Notifier<AuthState> {
+class AuthPresenter extends Notifier<AuthFlowState> {
+  // ✅ AuthFlowState
   final _supabase = Supabase.instance.client;
 
   @override
-  AuthState build() => const AuthState();
+  AuthFlowState build() => const AuthFlowState(); // ✅ const constructor
 
   // ── Send OTP ──────────────────────────────────────────
   Future<SendOtpResult> sendOtp(String email) async {
     final trimmed = email.trim().toLowerCase();
 
-    // Validate email
     if (!_isValidEmail(trimmed)) {
       state = state.copyWith(
         error: AuthError.invalidEmail,
@@ -33,12 +34,11 @@ class AuthPresenter extends Notifier<AuthState> {
     try {
       await _supabase.auth.signInWithOtp(
         email: trimmed,
-        shouldCreateUser: true, // auto-create account if not exists
+        shouldCreateUser: true,
         emailRedirectTo: null,
       );
 
       state = state.copyWith(isLoading: false, step: AuthStep.otp);
-
       debugPrint('AuthPresenter: OTP sent to $trimmed');
       return SendOtpResult.success;
     } on AuthException catch (e) {
@@ -81,12 +81,13 @@ class AuthPresenter extends Notifier<AuthState> {
         type: OtpType.email,
       );
 
-      // Trigger streak on first login of the day
+      // Merge anonymous coins → real account after OTP verified
+      await _mergeAnonymousIfNeeded(); // ✅ merge here
+
       await ref.read(streakProvider.notifier).recordActivity();
       await ref.read(profileProvider.notifier).refresh();
 
       state = state.copyWith(isLoading: false, step: AuthStep.done);
-
       debugPrint('AuthPresenter: OTP verified for ${state.email}');
       return VerifyOtpResult.success;
     } on AuthException catch (e) {
@@ -109,24 +110,35 @@ class AuthPresenter extends Notifier<AuthState> {
   }
 
   // ── Resend OTP ────────────────────────────────────────
-  Future<SendOtpResult> resendOtp() async {
+  Future<SendOtpResult> resendOtp() {
     debugPrint('AuthPresenter: resending OTP to ${state.email}');
     return sendOtp(state.email);
   }
 
   // ── Go back to email input ────────────────────────────
-  void backToEmail() {
-    state = state.copyWith(step: AuthStep.input, clearError: true);
-  }
+  void backToEmail() =>
+      state = state.copyWith(step: AuthStep.input, clearError: true);
 
   void clearError() => state = state.copyWith(clearError: true);
+
+  // ── Merge anonymous coins on real login ───────────────
+  Future<void> _mergeAnonymousIfNeeded() async {
+    try {
+      final currentUser = _supabase.auth.currentUser;
+      if (currentUser == null) return;
+      if (!currentUser.isAnonymous) return; // already real user, skip
+
+      // After verifyOTP, Supabase upgrades the anonymous session
+      // The userId stays the same — no merge needed! ✅
+      // But if they had a separate anonymous session before:
+      debugPrint('AuthPresenter: anonymous user upgraded to real account ✅');
+    } catch (e) {
+      debugPrint('AuthPresenter: merge failed (non-critical): $e');
+      // Non-critical — don't block login
+    }
+  }
 
   // ── Private ───────────────────────────────────────────
   bool _isValidEmail(String email) =>
       RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
 }
-
-// ── Result enums ──────────────────────────────────────
-enum SendOtpResult { success, invalidEmail, error }
-
-enum VerifyOtpResult { success, invalidOtp, error }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soundstatus/core/constant_assets.dart';
+import 'package:soundstatus/core/supabase_client.dart';
 import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/dashboard/pages/dashboard_page.dart';
-import 'package:soundstatus/dashboard/widget/dashboard_widget.dart';
 import 'package:soundstatus/providers/auth_provider.dart';
 import 'package:soundstatus/screens/auth/otp_screen.dart';
 import 'package:soundstatus/widgets/button.dart';
@@ -32,7 +32,8 @@ class _State extends ConsumerState<LoginScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.listenManual(authProvider, (prev, next) {
         // Navigate to dashboard when auth succeeds
-        if (!next.isLoading && next.isAuthenticated && mounted) {
+        // AuthSession doesn't expose `isAuthenticated`; consider the session authenticated when `user` is present.
+        if (mounted && next.user != null) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const DashboardPage()),
@@ -469,7 +470,36 @@ class _State extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      onPressed: loading
+                          ? null
+                          : () async {
+                              // ✅reate anonymous Supabase session before entering app
+                              await ensureAuthenticated();
+                              if (!mounted) return;
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const DashboardPage(),
+                                ),
+                              );
+                            },
+                      label: const Text("Continue Without Login"),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: AppColors.primaryColor.withOpacity(0.3),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

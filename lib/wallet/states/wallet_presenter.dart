@@ -12,20 +12,26 @@ final walletPresenterProvider = NotifierProvider<WalletPresenter, WalletState>(
 class WalletPresenter extends Notifier<WalletState> {
   @override
   WalletState build() {
-    // Watch ad provider and sync adReady into our state
+    // ✅ Watch ad ready state
     final adReady = ref.watch(adRewardProvider);
-    // Watch transactions and sync into state
-    final txnsAsync = ref.watch(walletProvider);
 
-    txnsAsync.whenData((list) {
-      if (state.transactions != list) {
+    // ✅ Watch wallet transactions safely — no state mutation inside build
+    final txnsAsync = ref.watch(walletProvider);
+    final transactions = txnsAsync.valueOrNull ?? [];
+
+    // ✅ Listen to changes AFTER build — safe place to react
+    ref.listen<AsyncValue<List<WalletTransaction>>>(walletProvider, (
+      prev,
+      next,
+    ) {
+      next.whenData((list) {
         state = state.copyWith(transactions: list);
-      }
+      });
     });
 
     return WalletState(
       adReady: adReady,
-      transactions: ref.read(walletProvider).valueOrNull ?? [],
+      transactions: transactions, // ✅ safe — uses valueOrNull
     );
   }
 

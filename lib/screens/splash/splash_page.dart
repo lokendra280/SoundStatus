@@ -65,12 +65,12 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              "Version Name v.0.53.34",
+              "Version Name v.1.0.12",
               style: TextStyle(fontSize: 18, color: AppColors.white),
             ),
             SizedBox(height: 4),
             Text(
-              "App Update Date 2025-03-11",
+              "App Update Date 2025-9-12",
               style: TextStyle(fontSize: 16, color: AppColors.secondaryColor),
             ),
           ],
@@ -83,7 +83,7 @@ class _SplashScreenState extends State<SplashScreen> {
             Image.asset(Assets.applogo, height: 100, width: 100),
             const SizedBox(height: 24),
             const Text(
-              "Status",
+              "MemeSound is loading your vibe...",
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.white, fontSize: 18),
             ),

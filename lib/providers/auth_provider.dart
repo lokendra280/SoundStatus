@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:soundstatus/screens/auth/states/auth_sesions.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 SupabaseClient get _sb => Supabase.instance.client;
@@ -27,16 +28,16 @@ class AuthState {
 // ══════════════════════════════════════════════════════
 //  AUTH NOTIFIER
 // ══════════════════════════════════════════════════════
-class AuthNotifier extends Notifier<AuthState> {
+class AuthNotifier extends Notifier<AuthSession> {
   @override
-  AuthState build() {
+  AuthSession build() {
     // Sync state with Supabase auth stream
     _sb.auth.onAuthStateChange.listen((event) {
       state = event.session?.user != null
           ? state.loggedIn(event.session!.user)
           : state.loggedOut();
     });
-    return AuthState(user: _sb.auth.currentUser);
+    return AuthSession(user: _sb.auth.currentUser);
   }
 
   static const _webClientId =
@@ -64,18 +65,45 @@ class AuthNotifier extends Notifier<AuthState> {
       return e.toString();
     }
   }
+  //  anonymous sign-in
+
+  Future<void> ensureAuthenticated() async {
+    if (_sb.auth.currentUser != null) return;
+    try {
+      final res = await _sb.auth.signInAnonymously();
+      if (res.user != null) state = state.loggedIn(res.user!);
+    } catch (e) {
+      state = state.withError(e.toString());
+    }
+  }
 
   // ── Sign in ───────────────────────────────────────────
   Future<String?> signIn(String email, String password) async {
     state = state.loading();
     try {
+      final anonymousId = _sb.auth.currentUser?.isAnonymous == true
+          ? _sb.auth.currentUser?.id
+          : null;
+
       final res = await _sb.auth.signInWithPassword(
         email: email.trim().toLowerCase(),
         password: password,
       );
-      state = res.user != null
-          ? state.loggedIn(res.user!)
-          : state.withError('Sign in failed');
+
+      if (res.user == null) {
+        state = state.withError('Sign in failed');
+        return 'Sign in failed';
+      }
+
+      // Merge anonymous coins if applicable
+      if (anonymousId != null && anonymousId != res.user!.id) {
+        await _sb.rpc(
+          'merge_anonymous_coins',
+          params: {'p_anonymous_id': anonymousId, 'p_real_id': res.user!.id},
+        );
+      }
+
+      state = state.loggedIn(res.user!);
       return null;
     } catch (e) {
       state = state.withError(e.toString());
@@ -192,7 +220,7 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 }
 
-final authProvider = NotifierProvider<AuthNotifier, AuthState>(
+final authProvider = NotifierProvider<AuthNotifier, AuthSession>(
   AuthNotifier.new,
 );
 

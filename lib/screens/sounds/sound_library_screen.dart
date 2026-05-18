@@ -27,7 +27,7 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
-    ref.read(playbackPresenterProvider.notifier).stop();
+
     super.dispose();
   }
 
