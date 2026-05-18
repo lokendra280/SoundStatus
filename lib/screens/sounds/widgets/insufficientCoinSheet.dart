@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/screens/sounds/states/sound_library_presenter.dart';
 import 'package:soundstatus/screens/sounds/widgets/earnoption_card.dart';
+import 'package:soundstatus/wallet/wallet_screen.dart';
 
 class InsufficientCoinsSheet extends ConsumerStatefulWidget {
   const InsufficientCoinsSheet();
@@ -99,9 +100,11 @@ class _InsufficientCoinsSheetState
         // Go to wallet button
         GestureDetector(
           onTap: () {
-            Navigator.pop(context);
-            // Navigate to wallet tab — adjust index to match your bottom nav
-            //  ref.read(bottomNavIndexProvider.notifier).state = 3;
+            Navigator.pop(context); // Close the sheet first
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const WalletScreen()),
+            );
           },
           child: Container(
             width: double.infinity,
