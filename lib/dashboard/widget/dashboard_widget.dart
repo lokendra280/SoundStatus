@@ -4,7 +4,7 @@ import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/screens/home/home_screen.dart';
 import 'package:soundstatus/screens/settings/ui/setting_page.dart';
 import 'package:soundstatus/screens/sounds/sound_library_screen.dart';
-import 'package:soundstatus/screens/sounds/sound_upload_screen.dart';
+import 'package:soundstatus/screens/sounds/widgets/sound_page.dart';
 import 'package:soundstatus/wallet/wallet_screen.dart';
 import 'package:soundstatus/widgets/button.dart';
 import 'package:soundstatus/widgets/common_svg_widget.dart';
@@ -41,7 +41,7 @@ class NavigationBar extends StatelessWidget {
       backgroundColor: Colors.transparent,
 
       elevation: elevation,
-      selectedItemColor: AppColors.primaryColor,
+      selectedItemColor: AppColors.white,
       unselectedItemColor: AppColors.darkGrey,
       currentIndex: selectedIndex,
       onTap: onDestinationSelected,
@@ -120,6 +120,7 @@ class _DashboardWidgetState extends State<DashboardWidget>
     return WillPopScope(
       onWillPop: showExitPopup,
       child: Scaffold(
+        backgroundColor: AppColors.cardColors,
         bottomNavigationBar: NavigationBar(
           height: 80,
           elevation: 0,
@@ -136,36 +137,23 @@ class _DashboardWidgetState extends State<DashboardWidget>
             NavigationDestination(
               icon: CommonSvgWidget(
                 svgName: Assets.home,
-                color: _selectedIndex == 0
-                    ? AppColors.primaryColor
-                    : AppColors.darkGrey,
+                color: _selectedIndex == 0 ? AppColors.white : AppColors.white,
               ),
-              label: "Home",
-            ),
-            NavigationDestination(
-              icon: CommonSvgWidget(
-                svgName: Assets.upload,
-                color: _selectedIndex == 1
-                    ? AppColors.primaryColor
-                    : AppColors.darkGrey,
-              ),
-              label: "Sounds",
+              label: "Sound",
             ),
 
             NavigationDestination(
               icon: CommonSvgWidget(
                 svgName: Assets.wallet,
-                color: _selectedIndex == 2
-                    ? AppColors.primaryColor
-                    : AppColors.darkGrey,
+                color: _selectedIndex == 1 ? AppColors.white : AppColors.white,
               ),
               label: "Wallet",
             ),
             NavigationDestination(
               icon: CommonSvgWidget(
                 svgName: Assets.setting,
-                color: _selectedIndex == 3
-                    ? AppColors.primaryColor
+                color: _selectedIndex == 2
+                    ? AppColors.white
                     : AppColors.darkGrey,
               ),
               label: "Setting",
@@ -177,7 +165,6 @@ class _DashboardWidgetState extends State<DashboardWidget>
           physics: const NeverScrollableScrollPhysics(),
           onPageChanged: _onPageChanged,
           children: [
-            const HomeScreen(),
             const SoundLibraryScreen(),
             const WalletScreen(),
             SettingsScreen(),

@@ -12,6 +12,7 @@ import 'package:soundstatus/providers/sound_library_provider.dart';
 import 'package:soundstatus/providers/wallet_provider.dart';
 
 const kShareCoinCost = 3;
+const kPlayCoinCost = 1;
 
 // ══════════════════════════════════════════════════════
 //  PLAYBACK STATE
@@ -49,7 +50,7 @@ class PlaybackState {
 }
 
 // ── Playback result ───────────────────────────────────
-enum PlaybackResult { started, stopped, failed, noUrl }
+enum PlaybackResult { started, stopped, failed, noUrl, insufficientCoins }
 
 // ══════════════════════════════════════════════════════
 //  SHARE STATE
@@ -127,7 +128,11 @@ class PlaybackPresenter extends Notifier<PlaybackState> {
       debugPrint('togglePlay: no fileUrl for sound ${sound.id}');
       return PlaybackResult.noUrl;
     }
-
+    final coins = ref.read(profileProvider).valueOrNull?.coinBalance ?? 0;
+    if (coins < kPlayCoinCost) {
+      debugPrint('togglePlay: insufficient coins ($coins)');
+      return PlaybackResult.insufficientCoins;
+    }
     // Stop any other sound first
     if (state.hasAnySoundPlaying) await _player.stop();
 
@@ -143,7 +148,7 @@ class PlaybackPresenter extends Notifier<PlaybackState> {
       await _player.play();
 
       // Increment immediately after play() — same as original working code
-      await _incrementPlayCount(sound.id);
+      await _deductPlayCoin(sound.id);
 
       state = state.copyWith(isLoading: false);
       return PlaybackResult.started;
@@ -159,6 +164,23 @@ class PlaybackPresenter extends Notifier<PlaybackState> {
   void stop() {
     _player.stop();
     state = state.copyWith(clearPlaying: true);
+  }
+
+  Future<void> _deductPlayCoin(String soundTitle) async {
+    try {
+      await ref
+          .read(walletProvider.notifier)
+          .spend(
+            amount: kPlayCoinCost,
+            source: TxSource.spendUnlock,
+            note: 'Played: $soundTitle',
+          );
+      await ref.read(profileProvider.notifier).refresh();
+      debugPrint('_deductPlayCoin: success');
+    } catch (e) {
+      // Silent — coin failure must never break playback
+      debugPrint('_deductPlayCoin error: $e');
+    }
   }
 
   // ── Private helpers ───────────────────────────────────
@@ -297,15 +319,12 @@ class SharePresenter extends Notifier<ShareState> {
     }
   }
 
-  // ── Private helpers ───────────────────────────────────
-  int get _currentCoins =>
-      ref.read(profileProvider).valueOrNull?.coinBalance ?? 0;
   Future<bool> _deductCoins(String soundTitle) async {
     try {
       await ref
           .read(walletProvider.notifier)
           .spend(
-            amount: kShareCoinCost, // positive — spend() negates it
+            amount: kShareCoinCost,
             source: TxSource.shareSound,
             note: 'Shared: $soundTitle',
           );
@@ -325,6 +344,10 @@ class SharePresenter extends Notifier<ShareState> {
       return false;
     }
   }
+
+  // ── Private helpers ───────────────────────────────────
+  int get _currentCoins =>
+      ref.read(profileProvider).valueOrNull?.coinBalance ?? 0;
 
   Future<void> _refundCoins(String soundTitle) async {
     try {

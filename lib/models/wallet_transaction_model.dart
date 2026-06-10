@@ -6,6 +6,7 @@ enum TxSource {
   systemBonus,
   streakBonus,
   spendUnlock,
+
   shareSound, // new — deduct 3 coins on share
   shareRefund, // new — refund when share fails
 }

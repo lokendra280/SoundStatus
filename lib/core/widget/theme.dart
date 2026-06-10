@@ -73,6 +73,7 @@ class AppColors {
   static const purpleMid = Color(0xFFAFA9EC);
 
   static const amberLight = Color(0xFFFAEEDA);
+  static const cardColors = Color(0xFF1E1E1E);
 }
 
 extension AppColorsX on BuildContext {

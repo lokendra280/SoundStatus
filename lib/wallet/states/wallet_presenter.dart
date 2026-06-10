@@ -31,7 +31,7 @@ class WalletPresenter extends Notifier<WalletState> {
 
     return WalletState(
       adReady: adReady,
-      transactions: transactions, // ✅ safe — uses valueOrNull
+      transactions: transactions, // safe — uses valueOrNull
     );
   }
 

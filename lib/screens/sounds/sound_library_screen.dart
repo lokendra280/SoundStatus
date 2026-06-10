@@ -19,6 +19,13 @@ class SoundLibraryScreen extends ConsumerStatefulWidget {
   ConsumerState<SoundLibraryScreen> createState() => _SoundLibraryState();
 }
 
+const _bg = Color(0xFF0D0D0D);
+const _surface = Color(0xFF1A1A1A);
+const _card = Color(0xFF1E1E1E);
+const _purple = Color(0xFF7C3AED);
+const _purpleL = Color(0xFF9B59F5);
+const _white = Colors.white;
+
 class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
   String _activeFilter = 'all';
   final _searchCtrl = TextEditingController();
@@ -75,6 +82,7 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
         const [];
 
     return Scaffold(
+      backgroundColor: _bg,
       appBar: AppBar(
         elevation: 0,
         titleSpacing: 16,

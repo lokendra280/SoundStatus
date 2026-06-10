@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/models/sound_model.dart';
 import 'package:soundstatus/screens/sounds/states/sound_library_presenter.dart';
+import 'package:soundstatus/screens/sounds/widgets/insufficientCoinSheet.dart';
 import 'package:soundstatus/screens/sounds/widgets/weakform_bar.dart';
 
 class SoundCard extends ConsumerWidget {
@@ -35,7 +36,7 @@ class SoundCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.cardColors,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isPlaying ? AppColors.purpleMid : AppColors.white,
@@ -58,7 +59,7 @@ class SoundCard extends ConsumerWidget {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.darks,
+                        color: AppColors.white,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -69,7 +70,7 @@ class SoundCard extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 11,
                         color: sound.userName == "Admin"
-                            ? Colors.blue
+                            ? Colors.white
                             : AppColors.darkGrey,
                       ),
                     ),
@@ -86,6 +87,10 @@ class SoundCard extends ConsumerWidget {
                             .togglePlay(sound);
 
                         if (!context.mounted) return;
+                        if (result == PlaybackResult.insufficientCoins) {
+                          _showInsufficientCoinsSheet(context);
+                          return;
+                        }
                         if (result == PlaybackResult.noUrl) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -99,7 +104,7 @@ class SoundCard extends ConsumerWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: isPlaying ? AppColors.primaryColor : AppColors.white,
+                    color: isPlaying ? AppColors.white : AppColors.white,
                     shape: BoxShape.circle,
                   ),
                   child: isLoading
@@ -150,16 +155,12 @@ class SoundCard extends ConsumerWidget {
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primaryColor,
+                    color: AppColors.black,
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(
-                Icons.headphones_rounded,
-                size: 12,
-                color: AppColors.darkGrey,
-              ),
+              Icon(Icons.headphones_rounded, size: 12, color: AppColors.white),
               const SizedBox(width: 3),
               Text(
                 _formatCount(sound.playCount),
@@ -214,4 +215,12 @@ class SoundCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+void _showInsufficientCoinsSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const InsufficientCoinsSheet(),
+  );
 }
