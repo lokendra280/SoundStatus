@@ -145,15 +145,15 @@ class WalletScreen extends ConsumerWidget {
       isScrollControlled: true,
       builder: (_) => _SpendSheet(
         coins: ref.read(profileProvider).valueOrNull?.coinBalance ?? 0,
-        onSpend: (amount, label) async {
+        onSpend: (item) async {
           Navigator.pop(context);
           final result = await ref
               .read(walletPresenterProvider.notifier)
-              .spendCoins(amount, label);
+              .spendCoins(item);
           if (!context.mounted) return;
           switch (result) {
             case SpendResult.success:
-              _snack(context, '$label unlocked!');
+              _snack(context, '${item.label} unlocked!');
             case SpendResult.insufficient:
               _snack(context, 'Not enough coins', error: true);
             case SpendResult.error:
@@ -195,14 +195,14 @@ class _WalletAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) => AppBar(
-    elevation: 0,
     titleSpacing: 16,
-    title: const Text(
+    title: Text(
       'My Wallet',
       style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: AppColors.white,
+        // was AppColors.white — invisible on the light-mode (white) AppBar
+        color: context.textPrimary,
       ),
     ),
     actions: [
@@ -222,9 +222,8 @@ class _WalletAppBar extends StatelessWidget implements PreferredSizeWidget {
                   width: 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: state.adReady
-                        ? AppColors.teal
-                        : AppColors.amberLight,
+                    // was amberLight on an amberLight pill (invisible dot)
+                    color: state.adReady ? AppColors.teal : AppColors.amber,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -245,14 +244,10 @@ class _WalletAppBar extends StatelessWidget implements PreferredSizeWidget {
     ],
     bottom: PreferredSize(
       preferredSize: const Size.fromHeight(0.5),
-      child: Container(height: 0.5, color: const Color(0xFFEFEFEF)),
+      child: Container(height: 0.5, color: context.c.border),
     ),
   );
 }
-
-// ══════════════════════════════════════════════════════
-//  BALANCE CARD
-// ══════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════
 //  STATS ROW
@@ -295,38 +290,43 @@ class _MiniStat extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEFEFEF)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: color,
+  Widget build(BuildContext context) {
+    final c = context.c;
+
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: c.card,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: c.border),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(fontSize: 10, color: AppColors.darkGrey),
-          ),
-        ],
+            const SizedBox(height: 2),
+            Text(label, style: TextStyle(fontSize: 10, color: c.textSub)),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 // ══════════════════════════════════════════════════════
 //  AD EARN CARD
 // ══════════════════════════════════════════════════════
+// NOTE: The pastel tint (blueLight bg, dark-blue text) is a fixed accent
+// design — it stays light in both modes and remains legible, so those
+// colors are intentionally NOT theme-switched. Only the disabled button
+// state adapts, since grey[200] would clash inside dark mode overlays.
 class _AdEarnCard extends StatelessWidget {
   final WalletState state;
   final VoidCallback onWatch;
@@ -351,7 +351,6 @@ class _AdEarnCard extends StatelessWidget {
                 color: const Color(0xFFB5D4F4),
                 borderRadius: BorderRadius.circular(10),
               ),
-
               child: CommonSvgWidget(
                 svgName: Assets.play,
                 height: 10,
@@ -420,7 +419,7 @@ class _AdEarnCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 11),
             decoration: BoxDecoration(
               color: state.adLimitReached
-                  ? Colors.grey[200]
+                  ? const Color(0xFFD6E3F0) // muted blue-grey fits the card
                   : state.adReady
                   ? AppColors.primaryColor
                   : AppColors.purpleMid,
@@ -461,6 +460,8 @@ class _AdEarnCard extends StatelessWidget {
 // ══════════════════════════════════════════════════════
 //  GENERIC EARN CARD
 // ══════════════════════════════════════════════════════
+// Fixed pastel accent card — colors are passed in and identical in both
+// modes by design, so no theme switching here.
 class _EarnCard extends StatelessWidget {
   final String icon;
   final String title, subtitle, reward;
@@ -495,7 +496,6 @@ class _EarnCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
           ),
           child: CommonSvgWidget(svgName: icon, color: iconColor),
-          // child: Icon(icon, color: iconColor, size: 18),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -546,6 +546,8 @@ class _TransactionList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     if (transactions.isEmpty) {
       return SliverToBoxAdapter(
         child: Center(
@@ -567,18 +569,18 @@ class _TransactionList extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'No transactions yet',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.darks,
+                    color: context.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Watch an ad to earn your first coins',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  style: TextStyle(fontSize: 12, color: c.textMuted),
                 ),
               ],
             ),
@@ -622,58 +624,62 @@ class _TxCard extends StatelessWidget {
       tx.type == TxType.earn ? AppColors.teal : AppColors.red;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: const Color(0xFFEFEFEF)),
-    ),
-    child: Row(
-      children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(color: _iconBg, shape: BoxShape.circle),
-          child: Icon(_icon, color: _iconColor, size: 18),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                tx.sourceLabel,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.darks,
-                ),
-              ),
-              if (tx.note != null && tx.note!.isNotEmpty)
+  Widget build(BuildContext context) {
+    final c = context.c;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(color: _iconBg, shape: BoxShape.circle),
+            child: Icon(_icon, color: _iconColor, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  tx.note!,
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  tx.sourceLabel,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                  ),
                 ),
-              Text(
-                DateFormat('dd MMM · hh:mm a').format(tx.createdAt.toLocal()),
-                style: TextStyle(fontSize: 10, color: Colors.grey[400]),
-              ),
-            ],
+                if (tx.note != null && tx.note!.isNotEmpty)
+                  Text(
+                    tx.note!,
+                    style: TextStyle(fontSize: 11, color: c.textSub),
+                  ),
+                Text(
+                  DateFormat('dd MMM · hh:mm a').format(tx.createdAt.toLocal()),
+                  style: TextStyle(fontSize: 10, color: c.textMuted),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          '${tx.type == TxType.earn ? '+' : '-'}${tx.amount}',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: _iconColor,
+          const SizedBox(width: 8),
+          Text(
+            '${tx.type == TxType.earn ? '+' : '-'}${tx.amount}',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: _iconColor,
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -684,66 +690,70 @@ class _RewardDialog extends StatelessWidget {
   const _RewardDialog({required this.coins});
 
   @override
-  Widget build(BuildContext context) => Dialog(
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-    backgroundColor: Colors.white,
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: const BoxDecoration(
-              color: Colors.amber,
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Text('🪙', style: TextStyle(fontSize: 30)),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Coins earned!',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.darks,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '+$coins coins added to your wallet',
-            style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 13),
-              decoration: BoxDecoration(
-                color: AppColors.primaryColor,
-                borderRadius: BorderRadius.circular(12),
+  Widget build(BuildContext context) {
+    final c = context.c;
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: c.cardElevated,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                color: Colors.amber,
+                shape: BoxShape.circle,
               ),
               child: const Center(
-                child: Text(
-                  'Awesome!',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                child: Text('🪙', style: TextStyle(fontSize: 30)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Coins earned!',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: context.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '+$coins coins added to your wallet',
+              style: TextStyle(fontSize: 13, color: c.textSub),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: Text(
+                    'Awesome!',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.white,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -751,155 +761,159 @@ class _RewardDialog extends StatelessWidget {
 // ══════════════════════════════════════════════════════
 class _SpendSheet extends StatelessWidget {
   final int coins;
-  final void Function(int amount, String label) onSpend;
+  final void Function(SpendItem item) onSpend;
   const _SpendSheet({required this.coins, required this.onSpend});
 
-  static const _items = [
-    (
-      label: 'Boost sound visibility',
-      cost: 100,
-      icon: Icons.rocket_launch_rounded,
-    ),
-    (label: 'Unlock premium template', cost: 200, icon: Icons.star_rounded),
-    (label: 'Extra daily shares', cost: 50, icon: Icons.share_rounded),
-    (label: 'Remove ads (1 day)', cost: 150, icon: Icons.block_rounded),
-  ];
+  // Icons are UI concerns, so they live here rather than in the enum.
+  IconData _iconFor(SpendItem item) => switch (item) {
+    // SpendItem.boostSound => Icons.rocket_launch_rounded,
+    // SpendItem.premiumTemplate => Icons.star_rounded,
+    SpendItem.extraShares => Icons.share_rounded,
+    SpendItem.removeAds1Day => Icons.block_rounded,
+  };
 
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: const BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(2),
+  Widget build(BuildContext context) {
+    final c = context.c;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: c.borderStrong,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 18),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Spend coins',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.darks,
+          const SizedBox(height: 18),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Spend coins',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: context.textPrimary,
+                ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: AppColors.amberLight,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  const Text('🪙', style: TextStyle(fontSize: 13)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$coins',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.amber,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        ..._items.map((item) {
-          final canAfford = coins >= item.cost;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
-              onTap: canAfford ? () => onSpend(item.cost, item.label) : null,
-              child: Container(
-                padding: const EdgeInsets.all(14),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
-                  color: canAfford ? Colors.white : const Color(0xFFF6F7FB),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: canAfford
-                        ? const Color(0xFFEFEFEF)
-                        : const Color(0xFFE0E0E0),
-                  ),
+                  color: AppColors.amberLight,
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: canAfford
-                            ? AppColors.purpleLight
-                            : Colors.grey[100],
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        item.icon,
-                        color: canAfford
-                            ? AppColors.primaryColor
-                            : Colors.grey[400],
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        item.label,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: canAfford ? AppColors.darks : Colors.grey[400],
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: canAfford
-                            ? AppColors.purpleLight
-                            : Colors.grey[100],
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '🪙 ${item.cost}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: canAfford
-                              ? AppColors.primaryColor
-                              : Colors.grey[400],
-                        ),
+                    const Text('🪙', style: TextStyle(fontSize: 13)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$coins',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.amber,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          );
-        }),
-      ],
-    ),
-  );
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...SpendItem.values.map((item) {
+            final canAfford = coins >= item.cost;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: GestureDetector(
+                onTap: canAfford ? () => onSpend(item) : null,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: canAfford ? c.card : c.cardElevated,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: canAfford ? c.border : c.borderStrong,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: canAfford
+                              ? AppColors.purpleLight
+                              : c.cardElevated,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          _iconFor(item),
+                          color: canAfford
+                              ? AppColors.primaryColor
+                              : c.textMuted,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          item.label,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: canAfford
+                                ? context.textPrimary
+                                : c.textMuted,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: canAfford
+                              ? AppColors.purpleLight
+                              : c.cardElevated,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '🪙 ${item.cost}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: canAfford
+                                ? AppColors.primaryColor
+                                : c.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -912,10 +926,10 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     text,
-    style: const TextStyle(
+    style: TextStyle(
       fontSize: 15,
       fontWeight: FontWeight.w600,
-      color: AppColors.darks,
+      color: context.textPrimary,
     ),
   );
 }

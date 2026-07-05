@@ -1,86 +1,73 @@
-import 'package:flutter/material.dart';
+import 'dart:ui' show lerpDouble;
 
-class SmoothPageIndicator extends StatefulWidget {
-  final int pageCount;
+import 'package:flutter/material.dart';
+import 'package:soundstatus/core/widget/theme.dart';
+
+/// Worm-style page indicator: the active dot stretches into a pill and the
+/// stretch smoothly transfers to the next dot as the user swipes.
+///
+/// Rewritten as a StatelessWidget driven by AnimatedBuilder(controller) —
+/// the old version added a listener in initState and never removed it
+/// (memory leak + setState-after-dispose crashes), and positioned dots with
+/// manual left-margin math that drifted. AnimatedBuilder subscribes and
+/// unsubscribes automatically.
+class SmoothPageIndicator extends StatelessWidget {
   final PageController controller;
-  final Color color;
-  final Color activeColor;
+  final int pageCount;
+
+  /// Inactive dot color. Defaults to the theme's strong border color.
+  final Color? color;
+
+  /// Active pill color. Defaults to the brand primary.
+  final Color? activeColor;
+
+  final double dotSize;
+  final double activeWidth;
   final double spacing;
-  final double radius;
-  final double dotHeight;
-  final double dotWidth;
 
   const SmoothPageIndicator({
     super.key,
-    required this.pageCount,
     required this.controller,
-    this.color = Colors.grey,
-    this.activeColor = Colors.blue,
-    this.spacing = 1,
-    this.radius = 15,
-    this.dotHeight = 8,
-    this.dotWidth = 8,
+    required this.pageCount,
+    this.color,
+    this.activeColor,
+    this.dotSize = 8,
+    this.activeWidth = 26,
+    this.spacing = 5,
   });
 
   @override
-  // ignore: library_private_types_in_public_api
-  _SmoothPageIndicator createState() => _SmoothPageIndicator();
-}
-
-class _SmoothPageIndicator extends State<SmoothPageIndicator> {
-  late int _currentPage;
-  late double _dotPosition;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentPage = widget.controller.initialPage;
-    _dotPosition = _currentPage.toDouble();
-    widget.controller.addListener(() {
-      setState(() {
-        _dotPosition = widget.controller.page!;
-        _currentPage = widget.controller.page!.round();
-      });
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Center(
-      child: SizedBox(
-        height: widget.radius * 2,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(widget.pageCount, (index) {
-            double relativePosition = index - _dotPosition;
+    final inactive = color ?? context.c.borderStrong;
+    final active = activeColor ?? AppColors.primaryColor;
 
-            double leftPadding = widget.radius + widget.spacing;
-            double indicatorSize = widget.dotWidth + widget.spacing;
-            double left = leftPadding + relativePosition * indicatorSize;
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        // Safe before the first layout / when detached.
+        final page = (controller.hasClients && controller.page != null)
+            ? controller.page!
+            : controller.initialPage.toDouble();
 
-            double scaledWidth = widget.dotWidth;
-            double scaledHeight = widget.dotHeight;
-            if (relativePosition < -1 || relativePosition > 1) {
-              scaledWidth = widget.dotWidth / 2;
-              scaledHeight = widget.dotHeight / 2;
-            }
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(pageCount, (i) {
+            // 1.0 when this dot is the current page, fading to 0.0 at
+            // one full page away — drives both width and color.
+            final t = (1.0 - (page - i).abs()).clamp(0.0, 1.0);
 
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-              margin: EdgeInsets.only(left: left),
-              width: scaledWidth,
-              height: scaledHeight,
+            return Container(
+              margin: EdgeInsets.symmetric(horizontal: spacing / 2),
+              width: lerpDouble(dotSize, activeWidth, t)!,
+              height: dotSize,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _currentPage == index
-                    ? widget.activeColor
-                    : widget.color,
+                color: Color.lerp(inactive, active, t),
+                borderRadius: BorderRadius.circular(dotSize),
               ),
             );
           }),
-        ),
-      ),
+        );
+      },
     );
   }
 }

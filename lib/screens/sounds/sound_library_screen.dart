@@ -19,13 +19,6 @@ class SoundLibraryScreen extends ConsumerStatefulWidget {
   ConsumerState<SoundLibraryScreen> createState() => _SoundLibraryState();
 }
 
-const _bg = Color(0xFF0D0D0D);
-const _surface = Color(0xFF1A1A1A);
-const _card = Color(0xFF1E1E1E);
-const _purple = Color(0xFF7C3AED);
-const _purpleL = Color(0xFF9B59F5);
-const _white = Colors.white;
-
 class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
   String _activeFilter = 'all';
   final _searchCtrl = TextEditingController();
@@ -34,7 +27,6 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
-
     super.dispose();
   }
 
@@ -55,6 +47,10 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Theme-aware palette: resolves to AppColors.dark or AppColors.light
+    // automatically based on the current ThemeData brightness.
+    final c = context.c;
+
     final sounds = ref.watch(soundLibraryProvider);
     final notifier = ref.read(soundLibraryProvider.notifier);
 
@@ -67,59 +63,59 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
     });
 
     // ── Derive dynamic categories from loaded sound data ───────────────────
-    // Extract unique non-null categories, preserve insertion order, put
-    // 'all' / 'trending' / 'myUploads' always first.
     final dynamicCategories =
         sounds.whenData((list) {
           final seen = <String>{};
           return list
               .map((s) => s.category?.toLowerCase().trim())
-              .where((c) => c != null && c.isNotEmpty)
+              .where((cat) => cat != null && cat.isNotEmpty)
               .cast<String>()
-              .where((c) => seen.add(c)) // unique, order-preserving
+              .where((cat) => seen.add(cat)) // unique, order-preserving
               .toList();
         }).valueOrNull ??
         const [];
 
     return Scaffold(
-      backgroundColor: _bg,
+      // No backgroundColor here — scaffoldBackgroundColor (c.bg) comes from
+      // buildTheme() so light/dark mode both work.
       appBar: AppBar(
-        elevation: 0,
+        // No backgroundColor / elevation here — appBarTheme in buildTheme()
+        // already sets surface color, elevation 0 and foregroundColor.
         titleSpacing: 16,
         title: _showSearch
             ? TextField(
                 controller: _searchCtrl,
                 autofocus: true,
-                style: const TextStyle(fontSize: 14),
+                style: TextStyle(fontSize: 14, color: context.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Search sounds...',
-                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  hintStyle: TextStyle(color: c.textMuted, fontSize: 14),
                   border: InputBorder.none,
                 ),
-                // FIX 3: search query goes to setQuery, not setCategory
-                //   onChanged: (v) => notifier.setFilter(v),
+                // Search query goes to setQuery, not setCategory.
+                // Requires a setQuery(String) method on the notifier.
+                onChanged: notifier.setQuery,
               )
-            : const Text(
+            : Text(
                 'Sound Library',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.darks,
+                  color: context.textPrimary,
                 ),
               ),
         actions: [
           IconButton(
             icon: Icon(
               _showSearch ? Icons.close_rounded : Icons.search_rounded,
-              color: AppColors.darks,
+              color: context.textPrimary,
               size: 22,
             ),
             onPressed: () {
               setState(() => _showSearch = !_showSearch);
               if (!_showSearch) {
                 _searchCtrl.clear();
-                // FIX: clear the search query AND reset to 'all' filter
-                // notifier.setQuery('');
+                notifier.setQuery('');
                 _applyFilter('all');
               }
             },
@@ -128,7 +124,7 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(0.5),
-          child: Container(height: 0.5, color: const Color(0xFFEFEFEF)),
+          child: Container(height: 0.5, color: c.border),
         ),
       ),
       body: Column(
@@ -140,7 +136,6 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
               children: [
-                // Always-present fixed filters
                 SoundLibaryChipWidget(
                   label: 'All',
                   active: _activeFilter == 'all',
@@ -156,8 +151,6 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
                   active: _activeFilter == 'myUploads',
                   onTap: () => _applyFilter('myUploads'),
                 ),
-
-                // FIX 1 & 2: Dynamic category chips from loaded sound data
                 ...dynamicCategories.map(
                   (cat) => SoundLibaryChipWidget(
                     label: cat[0].toUpperCase() + cat.substring(1),
@@ -187,7 +180,7 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
                     const SizedBox(height: 10),
                     Text(
                       'Failed to load sounds',
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: TextStyle(color: c.textSub),
                     ),
                     const SizedBox(height: 8),
                     GestureDetector(
@@ -221,7 +214,7 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
     );
   }
 
-  // ── Share sheet (unchanged) ────────────────────────────────────────────────
+  // ── Share sheet ────────────────────────────────────────────────────────────
 
   void _showShareSheet(BuildContext context, WidgetRef ref, SoundModel sound) {
     final coins = ref.read(profileProvider).valueOrNull?.coinBalance ?? 0;
@@ -268,10 +261,12 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
     switch (result) {
       case ShareResult.success:
         _snack('-$kShareCoinCost coins · Sound shared!');
+      case ShareResult.dismissed:
+        break; // user backed out of the share sheet — no charge, stay quiet
       case ShareResult.insufficientCoins:
         _showInsufficientCoinsSheet(context);
       case ShareResult.error:
-        _snack('Share failed. Coins refunded.', error: true);
+        _snack('Share failed. No coins were charged.', error: true);
     }
   }
 

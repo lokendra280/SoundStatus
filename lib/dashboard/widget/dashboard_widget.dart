@@ -9,6 +9,9 @@ import 'package:soundstatus/wallet/wallet_screen.dart';
 import 'package:soundstatus/widgets/button.dart';
 import 'package:soundstatus/widgets/common_svg_widget.dart';
 
+// NOTE: These names shadow Material's own NavigationDestination/NavigationBar.
+// It works because Dart resolves to the local declarations, but consider
+// renaming (e.g. AppNavigationBar) to avoid confusion and import clashes.
 class NavigationDestination {
   final Widget icon;
   final String label;
@@ -38,11 +41,11 @@ class NavigationBar extends StatelessWidget {
 
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.transparent,
-
+      // Surface color from the theme: white in light mode, dark panel in dark.
+      backgroundColor: c.surface,
       elevation: elevation,
-      selectedItemColor: AppColors.white,
-      unselectedItemColor: AppColors.darkGrey,
+      selectedItemColor: AppColors.primaryColor,
+      unselectedItemColor: c.textMuted,
       currentIndex: selectedIndex,
       onTap: onDestinationSelected,
       items: destinations.map((destination) {
@@ -103,6 +106,7 @@ class _DashboardWidgetState extends State<DashboardWidget>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
   }
@@ -113,18 +117,23 @@ class _DashboardWidgetState extends State<DashboardWidget>
     });
   }
 
+  /// Selected tab icon = brand color, unselected = muted theme color —
+  /// matches selectedItemColor/unselectedItemColor on the bar so icons
+  /// and labels always agree.
+  Color _iconColor(BuildContext context, int index) =>
+      _selectedIndex == index ? AppColors.primaryColor : context.c.textMuted;
+
   @override
   Widget build(BuildContext context) {
     // ignore: deprecated_member_use
-
     return WillPopScope(
       onWillPop: showExitPopup,
       child: Scaffold(
-        backgroundColor: AppColors.cardColors,
+        // No backgroundColor — scaffoldBackgroundColor (c.bg) comes from the
+        // theme. The old AppColors.cardColors forced a dark grey in light mode.
         bottomNavigationBar: NavigationBar(
           height: 80,
           elevation: 0,
-
           selectedIndex: _selectedIndex,
           onDestinationSelected: (index) {
             _pageController.animateToPage(
@@ -137,24 +146,21 @@ class _DashboardWidgetState extends State<DashboardWidget>
             NavigationDestination(
               icon: CommonSvgWidget(
                 svgName: Assets.home,
-                color: _selectedIndex == 0 ? AppColors.white : AppColors.white,
+                color: _iconColor(context, 0),
               ),
               label: "Sound",
             ),
-
             NavigationDestination(
               icon: CommonSvgWidget(
                 svgName: Assets.wallet,
-                color: _selectedIndex == 1 ? AppColors.white : AppColors.white,
+                color: _iconColor(context, 1),
               ),
               label: "Wallet",
             ),
             NavigationDestination(
               icon: CommonSvgWidget(
                 svgName: Assets.setting,
-                color: _selectedIndex == 2
-                    ? AppColors.white
-                    : AppColors.darkGrey,
+                color: _iconColor(context, 2),
               ),
               label: "Setting",
             ),

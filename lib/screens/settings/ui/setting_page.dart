@@ -27,6 +27,8 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     final profile = ref.watch(profileProvider).valueOrNull;
     final email = ref.watch(userEmailProvider);
     final themeMode = ref.watch(themeProvider);
@@ -34,27 +36,26 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
     final isDark = themeMode == ThemeMode.dark;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.white,
-        elevation: 0,
+        // backgroundColor & elevation come from appBarTheme (c.surface, 0)
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_rounded,
             size: 18,
-            color: AppColors.darks,
+            color: context.textPrimary,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Settings',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppColors.darks,
+            color: context.textPrimary,
           ),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(0.5),
-          child: Container(height: 0.5, color: const Color(0xFFEFEFEF)),
+          child: Container(height: 0.5, color: c.border),
         ),
       ),
       body: SingleChildScrollView(
@@ -73,9 +74,9 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: c.card,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFEFEFEF)),
+                  border: Border.all(color: c.border),
                 ),
                 child: Row(
                   children: [
@@ -104,18 +105,15 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
                         children: [
                           Text(
                             profile?.name ?? 'User',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.darks,
+                              color: context.textPrimary,
                             ),
                           ),
                           Text(
                             email,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey[500],
-                            ),
+                            style: TextStyle(fontSize: 11, color: c.textSub),
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -131,10 +129,10 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
                     ),
                     GestureDetector(
                       onTap: () {}, // navigate to edit profile
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_forward_ios_rounded,
                         size: 14,
-                        color: Colors.grey,
+                        color: c.textMuted,
                       ),
                     ),
                   ],
@@ -227,23 +225,6 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
                     activeColor: AppColors.primaryColor,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  // ),
-                  //     // _SettingsItem(
-                  //     //   icon: Icons.music_note_rounded,
-                  //     //   iconBg: const Color(0xFFE1F5EE),
-                  //     //   iconColor: const Color(0xFF0F6E56),
-                  //     //   label: 'Sound Quality',
-
-                  //     //   value: _quality,
-                  //     //   onTap: () => _showQualityPicker(),
-                  //     // ),
-                  //     // _SettingsItem(
-                  //     //   icon: Icons.language_rounded,
-                  //     //   iconBg: const Color(0xFFE6F1FB),
-                  //     //   iconColor: const Color(0xFF185FA5),
-                  //     //   label: 'Language',
-                  //     //   value: 'English',
-                  //     //   onTap: () {},
                 ),
               ],
             ),
@@ -255,8 +236,8 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
               items: [
                 _SettingsItem(
                   icon: Assets.help,
-                  iconBg: const Color(0xFFE6F1FB),
-                  iconColor: const Color(0xFF185FA5),
+                  iconBg: AppColors.blueLight,
+                  iconColor: AppColors.blue,
                   label: 'Help & FAQ',
                   onTap: () {
                     Navigator.push(
@@ -267,8 +248,8 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
                 ),
                 _SettingsItem(
                   icon: Assets.rating,
-                  iconBg: const Color(0xFFE6F1FB),
-                  iconColor: const Color(0xFF185FA5),
+                  iconBg: AppColors.blueLight,
+                  iconColor: AppColors.blue,
                   label: 'Rate the App',
                   onTap: () async {
                     final result = await ref
@@ -282,8 +263,8 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
                 ),
                 _SettingsItem(
                   icon: Assets.about,
-                  iconBg: const Color(0xFFE6F1FB),
-                  iconColor: const Color(0xFF185FA5),
+                  iconBg: AppColors.blueLight,
+                  iconColor: AppColors.blue,
                   label: 'About',
                   value: 'v2.0.0',
                   onTap: () {},
@@ -332,7 +313,7 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
             Center(
               child: Text(
                 'StatusHub Sound · v2.0.0',
-                style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                style: TextStyle(fontSize: 11, color: c.textMuted),
               ),
             ),
             const SizedBox(height: 32),
@@ -343,9 +324,11 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
   }
 
   void _showQualityPicker() {
+    final c = context.c;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -360,18 +343,18 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: c.borderStrong,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Sound Quality',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: AppColors.darks,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -385,12 +368,10 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: _quality == q ? AppColors.purpleLight : Colors.white,
+                    color: _quality == q ? AppColors.purpleLight : c.card,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: _quality == q
-                          ? AppColors.primaryColor
-                          : const Color(0xFFEFEFEF),
+                      color: _quality == q ? AppColors.primaryColor : c.border,
                     ),
                   ),
                   child: Row(
@@ -403,7 +384,7 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
                             fontWeight: FontWeight.w500,
                             color: _quality == q
                                 ? AppColors.primaryColor
-                                : AppColors.darks,
+                                : context.textPrimary,
                           ),
                         ),
                       ),
@@ -425,9 +406,12 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
   }
 
   void _confirmSignOut(BuildContext context, WidgetRef ref) {
+    final c = context.c;
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+        backgroundColor: c.cardElevated,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Sign out?',
@@ -435,7 +419,7 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
         ),
         content: Text(
           'You will be returned to the login screen.',
-          style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 13, color: c.textSub),
         ),
         actions: [
           TextButton(
@@ -444,7 +428,9 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
           ),
           TextButton(
             onPressed: () async {
-              ref.watch(authProvider.notifier).signOut();
+              // NOTE: was ref.watch — watch must never be used inside
+              // callbacks (Riverpod asserts/misbehaves). read is correct here.
+              ref.read(authProvider.notifier).signOut();
               if (mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -452,14 +438,6 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
                   (route) => false,
                 );
               }
-
-              // final result = await ref
-              //     .read(settingsProvider.notifier)
-              //     .signOut();
-              // if (!context.mounted) return;
-              // if (result == SignOutResult.error) {
-              //   _snack('Sign out failed', error: true);
-              // }
             },
             child: const Text(
               'Sign out',
@@ -501,7 +479,7 @@ class _SectionLabel extends StatelessWidget {
       style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w600,
-        color: Colors.grey[500],
+        color: context.c.textMuted,
         letterSpacing: 0.8,
       ),
     ),
@@ -513,30 +491,34 @@ class _SettingsGroup extends StatelessWidget {
   const _SettingsGroup({required this.items});
 
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFEFEFEF)),
-    ),
-    child: Column(
-      children: items.asMap().entries.map((e) {
-        final isLast = e.key == items.length - 1;
-        return Column(
-          children: [
-            e.value,
-            if (!isLast)
-              const Divider(
-                height: 0.5,
-                thickness: 0.5,
-                indent: 52,
-                color: Color(0xFFEFEFEF),
-              ),
-          ],
-        );
-      }).toList(),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final c = context.c;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        children: items.asMap().entries.map((e) {
+          final isLast = e.key == items.length - 1;
+          return Column(
+            children: [
+              e.value,
+              if (!isLast)
+                Divider(
+                  height: 0.5,
+                  thickness: 0.5,
+                  indent: 52,
+                  color: c.border,
+                ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
 }
 
 class _SettingsItem extends StatelessWidget {
@@ -558,57 +540,58 @@ class _SettingsItem extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: CommonSvgWidget(
-              svgName: icon,
-              color: iconColor,
-              height: 10,
-              width: 10,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: AppColors.darks),
-            ),
-          ),
-          if (value != null)
-            Text(
-              value!,
-              style: TextStyle(fontSize: 12, color: AppColors.darkGrey),
-            ),
-          if (trailing != null)
-            trailing!
-          else if (onTap != null && value == null)
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 12,
-              color: AppColors.darkGrey,
-            ),
-          if (onTap != null && value != null)
-            const Padding(
-              padding: EdgeInsets.only(left: 4),
-              child: Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 12,
-                color: AppColors.darkGrey,
+  Widget build(BuildContext context) {
+    final c = context.c;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: CommonSvgWidget(
+                svgName: icon,
+                color: iconColor,
+                height: 10,
+                width: 10,
               ),
             ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 13, color: context.textPrimary),
+              ),
+            ),
+            if (value != null)
+              Text(value!, style: TextStyle(fontSize: 12, color: c.textSub)),
+            if (trailing != null)
+              trailing!
+            else if (onTap != null && value == null)
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 12,
+                color: c.textMuted,
+              ),
+            if (onTap != null && value != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 12,
+                  color: c.textMuted,
+                ),
+              ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

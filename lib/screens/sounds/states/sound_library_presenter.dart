@@ -81,7 +81,8 @@ class ShareState {
 }
 
 // ── Share result ──────────────────────────────────────
-enum ShareResult { success, insufficientCoins, error }
+// `dismissed` = user backed out of the share sheet. NO coins charged.
+enum ShareResult { success, dismissed, insufficientCoins, error }
 
 // ══════════════════════════════════════════════════════
 //  PLAYBACK PRESENTER
@@ -147,8 +148,10 @@ class PlaybackPresenter extends Notifier<PlaybackState> {
       await _player.setUrl(fileUrl);
       await _player.play();
 
-      // Increment immediately after play() — same as original working code
-      await _deductPlayCoin(sound.id);
+      // Playback confirmed started — NOW charge, count the play, both
+      // fire-and-forget so they can never interrupt audio.
+      _deductPlayCoin(sound); // FIX: was passing sound.id as the "title"
+      _incrementPlayCount(sound.id); // FIX: was never called at all
 
       state = state.copyWith(isLoading: false);
       return PlaybackResult.started;
@@ -166,14 +169,14 @@ class PlaybackPresenter extends Notifier<PlaybackState> {
     state = state.copyWith(clearPlaying: true);
   }
 
-  Future<void> _deductPlayCoin(String soundTitle) async {
+  Future<void> _deductPlayCoin(SoundModel sound) async {
     try {
       await ref
           .read(walletProvider.notifier)
           .spend(
             amount: kPlayCoinCost,
             source: TxSource.spendUnlock,
-            note: 'Played: $soundTitle',
+            note: 'Played: ${sound.title}',
           );
       await ref.read(profileProvider.notifier).refresh();
       debugPrint('_deductPlayCoin: success');
@@ -183,10 +186,8 @@ class PlaybackPresenter extends Notifier<PlaybackState> {
     }
   }
 
-  // ── Private helpers ───────────────────────────────────
   Future<void> _incrementPlayCount(String soundId) async {
     try {
-      debugPrint('_incrementPlayCount: calling for $soundId');
       await ref.read(soundLibraryProvider.notifier).incrementPlayCount(soundId);
       debugPrint('_incrementPlayCount: success for $soundId');
     } catch (e) {
@@ -214,6 +215,11 @@ class SharePresenter extends Notifier<ShareState> {
   Future<ShareResult> shareAsMp3(SoundModel sound) =>
       _share(sound, scheme: null);
 
+  // NOTE: share_plus cannot target one specific app — the system share
+  // sheet decides. So `scheme` currently only affects the share text.
+  // To genuinely open WhatsApp directly you'd need android_intent_plus
+  // with a package name (e.g. com.whatsapp) on Android. Until then the
+  // per-app buttons and "More" behave the same, which is honest-but-meh UX.
   Future<ShareResult> shareToApp(SoundModel sound, String scheme) =>
       _share(sound, scheme: scheme);
 
@@ -223,11 +229,21 @@ class SharePresenter extends Notifier<ShareState> {
   }
 
   // ── Private: full share flow ──────────────────────────
+  //
+  //  FIXED ORDER — charge at the END, only on confirmed success:
+  //    1. guard url          (free)
+  //    2. check balance      (free)
+  //    3. download mp3       (free — failure costs nothing, no refund dance)
+  //    4. open share sheet   (free)
+  //    5. user completed it? → charge. Dismissed? → free.
+  //
+  //  The old order deducted at step 2, so backing out of the share
+  //  sheet still cost 3 coins, and download failures needed refunds.
   Future<ShareResult> _share(
     SoundModel sound, {
     required String? scheme,
   }) async {
-    // ── Step 0 — Guard file url ──────────────────────────
+    // ── Step 1 — Guard file url ──────────────────────────
     final fileUrl = sound.fileUrl;
     if (fileUrl == null || fileUrl.trim().isEmpty) {
       debugPrint('_share: fileUrl is null or empty for ${sound.id}');
@@ -240,7 +256,7 @@ class SharePresenter extends Notifier<ShareState> {
       return ShareResult.error;
     }
 
-    // ── Step 1 — Check coin balance ──────────────────────
+    // ── Step 2 — Check coin balance (pre-check only) ─────
     state = ShareState(
       status: ShareStatus.checkingCoins,
       soundId: sound.id,
@@ -248,10 +264,8 @@ class SharePresenter extends Notifier<ShareState> {
     );
 
     final currentCoins = _currentCoins;
-    debugPrint('_share: currentCoins=$currentCoins required=$kShareCoinCost');
-
     if (currentCoins < kShareCoinCost) {
-      debugPrint('_share: insufficient coins');
+      debugPrint('_share: insufficient coins ($currentCoins)');
       state = ShareState(
         status: ShareStatus.error,
         soundId: sound.id,
@@ -261,54 +275,61 @@ class SharePresenter extends Notifier<ShareState> {
       return ShareResult.insufficientCoins;
     }
 
-    // ── Step 2 — Deduct coins before sharing ─────────────
-    debugPrint('_share: deducting $kShareCoinCost coins');
-    final deducted = await _deductCoins(sound.title);
-    if (!deducted) {
-      debugPrint('_share: coin deduction failed');
-      state = ShareState(
-        status: ShareStatus.error,
-        soundId: sound.id,
-        error: ShareError.unknown,
-        availableCoins: currentCoins,
-      );
-      return ShareResult.error;
-    }
-    debugPrint('_share: coins deducted successfully');
-
-    // ── Step 3 — Download MP3 ────────────────────────────
+    // ── Step 3 — Download MP3 (nothing charged yet) ──────
     state = ShareState(
       status: ShareStatus.downloading,
       soundId: sound.id,
-      availableCoins: currentCoins - kShareCoinCost,
+      availableCoins: currentCoins,
     );
 
     try {
-      debugPrint('_share: downloading from $fileUrl');
       final file = await _downloadMp3(sound, fileUrl);
       debugPrint('_share: downloaded to ${file.path}');
 
-      // ── Step 4 — Share the MP3 file ──────────────────
-      debugPrint('_share: sharing file');
-      await Share.shareXFiles(
+      // ── Step 4 — Open the share sheet & wait for outcome ─
+      final result = await Share.shareXFiles(
         [XFile(file.path, mimeType: 'audio/mpeg')],
         subject: sound.title,
         text: '🎵 ${sound.title} — shared via StatusHub',
       );
 
-      state = ShareState(
-        status: ShareStatus.done,
-        availableCoins: currentCoins - kShareCoinCost,
-      );
-      debugPrint('_share: done successfully');
-      return ShareResult.success;
+      // ── Step 5 — Charge ONLY on a completed share ────────
+      switch (result.status) {
+        case ShareResultStatus.dismissed:
+          // User backed out — free, and no refund needed because
+          // nothing was ever taken.
+          debugPrint('_share: dismissed by user, no charge');
+          state = ShareState(
+            status: ShareStatus.idle,
+            availableCoins: currentCoins,
+          );
+          return ShareResult.dismissed;
+
+        case ShareResultStatus.success:
+        case ShareResultStatus.unavailable:
+          // success = user picked a target app.
+          // unavailable = this platform can't report an outcome; the file
+          // WAS handed to the system sheet, so we treat it as shared.
+          // (Change `unavailable` to the dismissed branch above if you'd
+          // rather those devices share free.)
+          final charged = await _deductCoins(sound.title);
+          state = ShareState(
+            status: ShareStatus.done,
+            availableCoins: charged
+                ? currentCoins - kShareCoinCost
+                : currentCoins,
+          );
+          debugPrint('_share: done, charged=$charged');
+          // If charging failed AFTER a real share, the user gets a free
+          // share — the correct failure direction. Never the reverse.
+          return ShareResult.success;
+      }
     } catch (e, st) {
       debugPrint('_share: download/share error: $e');
       debugPrint('$st');
 
-      // Refund coins on any failure
-      await _refundCoins(sound.title);
-
+      // Nothing was charged before this point, so there is nothing to
+      // refund — the old _refundCoins step is gone by design.
       state = ShareState(
         status: ShareStatus.error,
         soundId: sound.id,
@@ -333,14 +354,6 @@ class SharePresenter extends Notifier<ShareState> {
       return true;
     } catch (e) {
       debugPrint('_deductCoins error: $e');
-      if (e.toString().contains('Insufficient coins')) {
-        state = ShareState(
-          status: ShareStatus.error,
-          soundId: state.soundId,
-          error: ShareError.insufficientCoins,
-          availableCoins: _currentCoins,
-        );
-      }
       return false;
     }
   }
@@ -348,22 +361,6 @@ class SharePresenter extends Notifier<ShareState> {
   // ── Private helpers ───────────────────────────────────
   int get _currentCoins =>
       ref.read(profileProvider).valueOrNull?.coinBalance ?? 0;
-
-  Future<void> _refundCoins(String soundTitle) async {
-    try {
-      await ref
-          .read(walletProvider.notifier)
-          .earn(
-            amount: kShareCoinCost,
-            source: TxSource.shareRefund,
-            note: 'Refund: share failed for $soundTitle',
-          );
-      await ref.read(profileProvider.notifier).refresh();
-      debugPrint('_refundCoins: success');
-    } catch (e) {
-      debugPrint('_refundCoins error: $e');
-    }
-  }
 
   Future<File> _downloadMp3(SoundModel sound, String fileUrl) async {
     // Validate URI before making request
@@ -396,9 +393,6 @@ class SharePresenter extends Notifier<ShareState> {
     final file = File('${dir.path}/${safeName}_${sound.id}.mp3');
 
     await file.writeAsBytes(response.bodyBytes);
-    debugPrint(
-      '_downloadMp3: saved ${response.bodyBytes.length} bytes to ${file.path}',
-    );
     return file;
   }
 }
