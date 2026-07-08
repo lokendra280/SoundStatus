@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "993530550886",
+    "project_id": "soundstatus-mobileapp",
+    "storage_bucket": "soundstatus-mobileapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:993530550886:android:ad29baaf191a5bd279aba7",
+        "android_client_info": {
+          "package_name": "com.status_hub"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "993530550886-ut3pki685q7ieb5tn3tcst26d799delq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSiP1KbqfeJtfDkiuDo0Bzd_34TPZfBBw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "993530550886-ut3pki685q7ieb5tn3tcst26d799delq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

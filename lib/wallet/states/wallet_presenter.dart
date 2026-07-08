@@ -29,6 +29,20 @@ enum SpendItem {
   final String key;
 }
 
+// ── Result enums ──────────────────────────────────────
+enum WatchAdResult { rewarded, dismissed, limitReached, notReady, error }
+
+enum SpendResult { success, insufficient, error }
+
+enum SpinResult { won, alreadySpun, error }
+
+class SpinOutcome {
+  final SpinResult result;
+  final int prize;
+  const SpinOutcome(this.result, [this.prize = 0]);
+}
+
+// ── Presenter ─────────────────────────────────────────
 class WalletPresenter extends Notifier<WalletState> {
   @override
   WalletState build() {
@@ -129,10 +143,29 @@ class WalletPresenter extends Notifier<WalletState> {
     }
   }
 
+  // ── Daily spin ───────────────────────────────────────
+  // The server decides the prize and enforces one spin per UTC day.
+  // The wheel UI just animates to whatever prize comes back.
+  Future<SpinOutcome> claimDailySpin() async {
+    try {
+      final res = await supabase.rpc('claim_daily_spin');
+      final map = Map<String, dynamic>.from(res as Map);
+      switch (map['status']) {
+        case 'ok':
+          // Refresh balance + transaction history to show the new coins
+          await ref.read(profileProvider.notifier).refresh();
+          await ref.read(walletProvider.notifier).refresh();
+          return SpinOutcome(SpinResult.won, (map['prize'] as num).toInt());
+        case 'already_spun':
+          return const SpinOutcome(SpinResult.alreadySpun);
+        default:
+          return const SpinOutcome(SpinResult.error);
+      }
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return const SpinOutcome(SpinResult.error);
+    }
+  }
+
   void clearError() => state = state.copyWith(clearError: true);
 }
-
-// ── Result enums ──────────────────────────────────────
-enum WatchAdResult { rewarded, dismissed, limitReached, notReady, error }
-
-enum SpendResult { success, insufficient, error }

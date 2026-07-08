@@ -13,47 +13,38 @@ class LeaderboardEntry {
     required this.score,
     required this.ptsToNextRank,
   });
-
-  factory LeaderboardEntry.fromJson(Map<String, dynamic> j, int rank) =>
-      LeaderboardEntry(
-        userId: j['user_id'] as String,
-        name: j['name'] as String? ?? 'User',
-        tier: j['tier'] as String? ?? 'bronze',
-        rank: rank,
-        score: (j['score'] as num?)?.toInt() ?? 0,
-        ptsToNextRank: (j['pts_to_next'] as num?)?.toInt() ?? 0,
-      );
 }
 
 // Leaderboard list provider
-final leaderboardProvider = FutureProvider.family<List<LeaderboardEntry>, String>((
-  ref,
-  period,
-) async {
-  final today = DateTime.now().toUtc();
-  final periodKey = switch (period) {
-    'weekly' => '${today.year}-W${_weekNumber(today)}',
-    'creator' => '${today.year}-${today.month.toString().padLeft(2, '0')}',
-    _ =>
-      '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}',
-  };
+final leaderboardProvider =
+    FutureProvider.family<List<LeaderboardEntry>, String>((ref, period) async {
+      final res = await supabase.rpc(
+        'get_leaderboard',
+        params: {'p_period': period},
+      );
 
-  final res = await supabase
-      .from('leaderboard_scores')
-      .select('user_id, score, tier, profiles(name)')
-      .eq('period_type', period == 'creator' ? 'creator' : 'daily')
-      .eq('period_key', periodKey)
-      .order('score', ascending: false)
-      .limit(50);
+      final list = (res as List).cast<Map<String, dynamic>>();
 
-  return (res as List).asMap().entries.map((e) {
-    final json = Map<String, dynamic>.from(e.value as Map);
-    json['name'] = (json['profiles'] as Map?)?['name'] ?? 'User';
-    return LeaderboardEntry.fromJson(json, e.key + 1);
-  }).toList();
-});
+      return [
+        for (var i = 0; i < list.length; i++)
+          LeaderboardEntry(
+            userId: list[i]['user_id'] as String,
+            name: list[i]['name'] as String? ?? 'User',
+            tier: list[i]['tier'] as String? ?? 'bronze',
+            rank: (list[i]['rank'] as num).toInt(),
+            score: (list[i]['score'] as num?)?.toInt() ?? 0,
+            // pts to overtake the person directly above
+            ptsToNextRank: i == 0
+                ? 0
+                : ((list[i - 1]['score'] as num).toInt() -
+                      (list[i]['score'] as num).toInt() +
+                      1),
+          ),
+      ];
+    });
 
-// My rank provider
+// My rank provider — derives from the same list, correct for every period,
+// and costs zero extra queries.
 final myRankProvider = FutureProvider.family<LeaderboardEntry?, String>((
   ref,
   period,
@@ -61,44 +52,9 @@ final myRankProvider = FutureProvider.family<LeaderboardEntry?, String>((
   final uid = currentUserId;
   if (uid == null) return null;
 
-  final today = DateTime.now().toUtc();
-  final periodKey =
-      '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-
-  final res = await supabase
-      .from('leaderboard_scores')
-      .select('user_id, score, tier')
-      .eq('user_id', uid)
-      .eq('period_type', 'daily')
-      .eq('period_key', periodKey)
-      .maybeSingle();
-
-  if (res == null) return null;
-
-  // Get rank by counting users with higher score
-  final higher = await supabase
-      .from('leaderboard_scores')
-      .select('id')
-      .eq('period_type', 'daily')
-      .eq('period_key', periodKey)
-      .gt('score', res['score'] as int);
-
-  final rank = (higher as List).length + 1;
-  final score = (res['score'] as num).toInt();
-  final ptsToNext = rank > 1 ? 50 : 0; // simplified
-
-  return LeaderboardEntry(
-    userId: uid,
-    name: 'You',
-    tier: res['tier'] as String? ?? 'bronze',
-    rank: rank,
-    score: score,
-    ptsToNextRank: ptsToNext,
-  );
+  final list = await ref.watch(leaderboardProvider(period).future);
+  for (final e in list) {
+    if (e.userId == uid) return e;
+  }
+  return null; // not in top 50 (or no score yet this period)
 });
-
-int _weekNumber(DateTime date) {
-  final startOfYear = DateTime(date.year, 1, 1);
-  final diff = date.difference(startOfYear).inDays;
-  return (diff / 7).ceil();
-}

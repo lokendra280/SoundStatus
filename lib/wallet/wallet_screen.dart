@@ -5,6 +5,8 @@ import 'package:soundstatus/core/constant_assets.dart';
 import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/models/wallet_transaction_model.dart';
 import 'package:soundstatus/providers/profile_provider.dart';
+import 'package:soundstatus/wallet/earnoption.dart';
+import 'package:soundstatus/wallet/spin_wheel_sheet.dart';
 import 'package:soundstatus/wallet/states/wallet_presenter.dart';
 import 'package:soundstatus/wallet/states/wallet_state.dart';
 import 'package:soundstatus/widgets/balance_card.dart';
@@ -31,6 +33,88 @@ class WalletScreen extends ConsumerWidget {
         ref.read(walletPresenterProvider.notifier).clearError();
       }
     });
+    void _showEarnSheet(
+      BuildContext context,
+      WidgetRef ref,
+      WalletState state,
+    ) {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (sheetCtx) {
+          final c = sheetCtx.c;
+          return Container(
+            decoration: BoxDecoration(
+              color: c.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: c.borderStrong,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Earn coins',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: sheetCtx.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Watch ad option
+                EarnOption(
+                  emoji: '📺',
+                  title: 'Watch a rewarded ad',
+                  subtitle: state.adLimitReached
+                      ? 'Daily limit reached'
+                      : '${state.adsRemaining} of 10 left today',
+                  reward: '+10',
+                  enabled: !state.adLimitReached,
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    _onWatchAd(context, ref);
+                  },
+                ),
+                const SizedBox(height: 8),
+
+                // Daily spin option
+                EarnOption(
+                  emoji: '🎡',
+                  title: 'Daily spin',
+                  subtitle: 'One free spin every day',
+                  reward: '1–10',
+                  enabled: true,
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      builder: (_) => const SpinWheelSheet(),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
 
     return Scaffold(
       appBar: _WalletAppBar(state: state),
@@ -44,7 +128,7 @@ class WalletScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 child: BalanceCard(
                   coins: profile?.coinBalance ?? 0,
-                  onEarn: () => _onWatchAd(context, ref),
+                  onEarn: () => _showEarnSheet(context, ref, state),
                   onSpend: () => _showSpendSheet(context, ref, state),
                 ),
               ),
@@ -320,7 +404,7 @@ class _MiniStat extends StatelessWidget {
   }
 }
 
-// ══════════════════════════════════════════════════════
+// ═════════════════════
 //  AD EARN CARD
 // ══════════════════════════════════════════════════════
 // NOTE: The pastel tint (blueLight bg, dark-blue text) is a fixed accent
@@ -612,9 +696,9 @@ class _TxCard extends StatelessWidget {
 
   IconData get _icon => switch (tx.source) {
     'ad_reward' => Icons.play_circle_rounded,
-    'upload_bonus' => Icons.upload_rounded,
-    'streak_bonus' => Icons.local_fire_department_rounded,
-    'spend' => Icons.shopping_bag_rounded,
+    'daily_spin' => Icons.casino_rounded,
+    'share_sound' => Icons.ios_share_rounded,
+    'spend_unlock' => Icons.shopping_bag_rounded,
     _ => Icons.monetization_on_rounded,
   };
 

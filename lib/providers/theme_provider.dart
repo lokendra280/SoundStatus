@@ -18,7 +18,7 @@ class ThemeNotifier extends Notifier<ThemeMode> {
     final saved = _prefs.getString(_key);
     if (saved == 'dark') return ThemeMode.dark;
     if (saved == 'system') return ThemeMode.system;
-    return ThemeMode.dark;
+    return ThemeMode.light; // ← default is now light
   }
 
   Future<void> setMode(ThemeMode mode) async {

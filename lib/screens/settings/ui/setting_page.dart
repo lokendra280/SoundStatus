@@ -33,7 +33,7 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
     final email = ref.watch(userEmailProvider);
     final themeMode = ref.watch(themeProvider);
 
-    final isDark = themeMode == ThemeMode.dark;
+    final isDark = themeMode == ThemeMode.light;
     return Scaffold(
       appBar: AppBar(
         // backgroundColor & elevation come from appBarTheme (c.surface, 0)

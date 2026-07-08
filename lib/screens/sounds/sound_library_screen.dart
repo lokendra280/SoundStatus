@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soundstatus/core/feedback_service.dart';
 import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/models/sound_model.dart';
 import 'package:soundstatus/providers/profile_provider.dart';
 import 'package:soundstatus/providers/sound_library_provider.dart';
+import 'package:soundstatus/screens/sounds/feedback_sheet.dart';
 import 'package:soundstatus/screens/sounds/states/sound_library_presenter.dart';
 import 'package:soundstatus/screens/sounds/widgets/chip.dart';
 import 'package:soundstatus/screens/sounds/widgets/insufficientCoinSheet.dart';
@@ -25,6 +27,12 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
   bool _showSearch = false;
 
   @override
+  void initState() {
+    super.initState();
+    _maybeShowFeedbackPrompt();
+  }
+
+  @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
@@ -43,6 +51,34 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
       default:
         notifier.setCategory(filter);
     }
+  }
+
+  // ── Weekly feedback prompt ──────────────────────────────────────────────
+
+  Future<void> _maybeShowFeedbackPrompt() async {
+    // Small delay so it doesn't clash with screen build/animations
+    await Future.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
+
+    if (await FeedbackService.shouldPrompt()) {
+      await FeedbackService.markPrompted();
+      if (!mounted) return;
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (_) => const FeedbackSheet(),
+      );
+    }
+  }
+
+  void _openFeedbackSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const FeedbackSheet(),
+    );
   }
 
   @override
@@ -105,6 +141,16 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
                 ),
               ),
         actions: [
+          if (!_showSearch)
+            IconButton(
+              tooltip: 'Send feedback',
+              icon: Icon(
+                Icons.chat_bubble_outline_rounded,
+                color: context.textPrimary,
+                size: 21,
+              ),
+              onPressed: _openFeedbackSheet,
+            ),
           IconButton(
             icon: Icon(
               _showSearch ? Icons.close_rounded : Icons.search_rounded,
@@ -127,6 +173,7 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
           child: Container(height: 0.5, color: c.border),
         ),
       ),
+
       body: Column(
         children: [
           // ── Filter chips ─────────────────────────────────────────────────
