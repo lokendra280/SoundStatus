@@ -1,5 +1,8 @@
+import 'dart:math';
+
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:soundstatus/core/constant_assets.dart';
 import 'package:soundstatus/core/storages/hive_storages.dart';
 import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/dashboard/pages/dashboard_page.dart';
@@ -14,11 +17,54 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  final AudioPlayer _player = AudioPlayer();
+  late final AnimationController _controller;
+  late final Animation<double> _bounce;
+  late final Animation<double> _fade;
+
+  // Rotating funny loading lines
+  static const _loadingLines = [
+    "MemeSound is loading your vibe...",
+    "Warming up the vine boom...",
+    "Downloading maximum bruh energy...",
+    "Certified funny moments incoming...",
+  ];
+  late final String _loadingText;
+
   @override
   void initState() {
     super.initState();
+
+    _loadingText = _loadingLines[Random().nextInt(_loadingLines.length)];
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+
+    // Logo drops in with an elastic bounce
+    _bounce = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
+
+    // Text fades in after the bounce starts
+    _fade = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.4, 1.0, curve: Curves.easeIn),
+    );
+
+    _controller.forward();
+    _playMemeSound();
     _initializeApp();
+  }
+
+  Future<void> _playMemeSound() async {
+    try {
+      await _player.play(AssetSource('sounds/splash_meme.mp3'), volume: 0.7);
+    } catch (e) {
+      // Never let a missing/failed sound break the splash
+      debugPrint('Splash sound failed: $e');
+    }
   }
 
   Future<void> _initializeApp() async {
@@ -27,12 +73,6 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     final hive = HiveStorage();
-
-    // final languageSelected = await hive.checkLanguageSelected();
-    // if (!languageSelected) {
-    //   _navigate(const LanguageSelectionScreen());
-    //   return;
-    // }
 
     final onboardCompleted = await hive.checkOnboardingCompleted();
     if (!onboardCompleted) {
@@ -51,8 +91,14 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void _navigate(Widget page) {
     if (!mounted) return;
-
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => page));
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -80,15 +126,24 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(Assets.applogo, height: 100, width: 100),
-            const SizedBox(height: 24),
-            const Text(
-              "MemeSound is loading your vibe...",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.white, fontSize: 18),
+            // Bouncing logo/emoji
+            ScaleTransition(
+              scale: _bounce,
+              child: const Text("🔊😂", style: TextStyle(fontSize: 72)),
+              // If you have a logo asset, swap the Text for:
+              // Image.asset(ConstantAssets.logo, width: 120),
             ),
             const SizedBox(height: 24),
-            const CircularProgressIndicator(color: Colors.white),
+            FadeTransition(
+              opacity: _fade,
+              child: Text(
+                _loadingText,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.white, fontSize: 18),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const CupertinoActivityIndicator(color: Colors.white),
           ],
         ),
       ),

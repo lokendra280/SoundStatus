@@ -28,12 +28,16 @@ class _State extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // ── Listen to auth state — navigate when signed in ──
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.listenManual(authProvider, (prev, next) {
-        // Navigate to dashboard when auth succeeds
-        // AuthSession doesn't expose `isAuthenticated`; consider the session authenticated when `user` is present.
-        if (mounted && next.user != null) {
+        final prevUser = prev?.user;
+        final user = next.user;
+
+        final wasSignedIn = prevUser != null && !prevUser.isAnonymous;
+        final isSignedIn = user != null && !user.isAnonymous;
+
+        // Only navigate on the transition into a real (non-anonymous) session
+        if (mounted && !wasSignedIn && isSignedIn) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const DashboardPage()),

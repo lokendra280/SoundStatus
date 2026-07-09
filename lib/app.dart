@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soundstatus/core/notification_service.dart';
 import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/providers/theme_provider.dart';
 import 'package:soundstatus/screens/splash/splash_page.dart';
@@ -11,7 +12,9 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
     return MaterialApp(
-      title: 'StatusHub Sound',
+      scaffoldMessengerKey: scaffoldMessengerKey,
+
+      title: 'SoundAdd',
       debugShowCheckedModeBanner: false,
       themeMode: themeMode,
       theme: buildTheme(false), // light

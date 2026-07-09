@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -212,9 +213,8 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
           // ── Sound list ────────────────────────────────────────────────────
           Expanded(
             child: sounds.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.primaryColor),
-              ),
+              loading: () =>
+                  const Center(child: CupertinoActivityIndicator(radius: 14)),
               error: (e, _) => Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
