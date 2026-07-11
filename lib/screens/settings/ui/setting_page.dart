@@ -37,14 +37,14 @@ class _SettingsState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         // backgroundColor & elevation come from appBarTheme (c.surface, 0)
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_rounded,
-            size: 18,
-            color: context.textPrimary,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+        // leading: IconButton(
+        //   icon: Icon(
+        //     Icons.arrow_back_ios_rounded,
+        //     size: 18,
+        //     color: context.textPrimary,
+        //   ),
+        //   onPressed: () => Navigator.pop(context),
+        // ),
         title: Text(
           'Settings',
           style: TextStyle(

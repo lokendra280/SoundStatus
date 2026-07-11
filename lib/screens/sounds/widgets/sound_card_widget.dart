@@ -1,15 +1,25 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ringtone_set_plus/ringtone_set_plus.dart';
 import 'package:soundstatus/core/widget/theme.dart';
 import 'package:soundstatus/models/sound_model.dart';
 import 'package:soundstatus/screens/sounds/states/sound_library_presenter.dart';
 import 'package:soundstatus/screens/sounds/widgets/insufficientCoinSheet.dart';
 import 'package:soundstatus/screens/sounds/widgets/weakform_bar.dart';
 
+enum _ToneType { ringtone, notification, alarm }
+
 class SoundCard extends ConsumerWidget {
   final SoundModel sound;
   final VoidCallback onShare;
   const SoundCard({super.key, required this.sound, required this.onShare});
+
+  // Only notification-category sounds can be set as a device tone,
+  // and only on Android (iOS doesn't allow it).
+  bool get _canSetAsTone =>
+      Platform.isAndroid && sound.category.toLowerCase() == 'notification';
 
   String _formatCount(int n) {
     if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
@@ -191,6 +201,46 @@ class SoundCard extends ConsumerWidget {
                 style: TextStyle(fontSize: 11, color: c.textMuted),
               ),
               const Spacer(),
+
+              // ── Set-as-tone button (notification category, Android only)
+              if (_canSetAsTone) ...[
+                GestureDetector(
+                  onTap: () => _showSetToneSheet(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor.withOpacity(
+                        isDark ? 0.18 : 0.1,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.notifications_active_rounded,
+                          size: 13,
+                          color: AppColors.primaryColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Set tone',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+
               // Share button
               GestureDetector(
                 onTap: isDownloading ? null : onShare,
@@ -236,6 +286,140 @@ class SoundCard extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  // ── Set-as-tone flow ─────────────────────────────────────────────
+
+  void _showSetToneSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.c.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Text(
+              'Set "${sound.title}" as',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: context.textPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            _toneOption(
+              sheetContext,
+              context,
+              icon: Icons.phone_in_talk_rounded,
+              label: 'Ringtone',
+              type: _ToneType.ringtone,
+            ),
+            _toneOption(
+              sheetContext,
+              context,
+              icon: Icons.notifications_rounded,
+              label: 'Notification sound',
+              type: _ToneType.notification,
+            ),
+            _toneOption(
+              sheetContext,
+              context,
+              icon: Icons.alarm_rounded,
+              label: 'Alarm sound',
+              type: _ToneType.alarm,
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _toneOption(
+    BuildContext sheetContext,
+    BuildContext cardContext, {
+    required IconData icon,
+    required String label,
+    required _ToneType type,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: AppColors.primaryColor, size: 20),
+      title: Text(
+        label,
+        style: TextStyle(fontSize: 13, color: cardContext.textPrimary),
+      ),
+      onTap: () {
+        Navigator.of(sheetContext).pop();
+        _applyTone(cardContext, type);
+      },
+    );
+  }
+
+  Future<void> _applyTone(BuildContext context, _ToneType type) async {
+    // TODO: adjust to your SoundModel's audio URL field name.
+    final url = sound.fileUrl;
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Audio file not available'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Blocking progress dialog while the file downloads & applies.
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryColor),
+      ),
+    );
+
+    bool success = false;
+    String? error;
+    try {
+      switch (type) {
+        case _ToneType.ringtone:
+          success = await RingtoneSet.setRingtoneFromNetwork(url);
+          break;
+        case _ToneType.notification:
+          success = await RingtoneSet.setNotificationFromNetwork(url);
+          break;
+        case _ToneType.alarm:
+          success = await RingtoneSet.setAlarmFromNetwork(url);
+          break;
+      }
+    } catch (e) {
+      error = e.toString();
+    }
+
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // close progress dialog
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? '"${sound.title}" set as ${type == _ToneType.ringtone
+                    ? 'ringtone'
+                    : type == _ToneType.notification
+                    ? 'notification sound'
+                    : 'alarm'}'
+              : error != null
+              ? 'Could not set tone: $error'
+              : 'Could not set tone. Please allow "Modify system settings" and try again.',
+        ),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

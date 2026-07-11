@@ -47,8 +47,8 @@ class _SoundLibraryState extends ConsumerState<SoundLibraryScreen> {
         notifier.setFilter(SoundFilter.all);
       case 'trending':
         notifier.setFilter(SoundFilter.trending);
-      case 'myUploads':
-        notifier.setFilter(SoundFilter.myUploads);
+      // case 'myUploads':
+      //   notifier.setFilter(SoundFilter.myUploads);
       default:
         notifier.setCategory(filter);
     }
